@@ -74,12 +74,13 @@ function stepNick(){
 }
 async function after(){
   var m = await CS.me(true);
-  if (!m.user) { stepEmail(); if (/why=nosession/.test(location.search) && localStorage.getItem('cs_was_in')) err('앞 화면에서 로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]'); return; }
+  if (!m.user) { stepEmail(); if (/why=nosession/.test(location.search)) err('앞 화면에서 로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]'); return; }
   try { localStorage.setItem('cs_was_in', '1'); } catch (e) {}
   if (m.err) { stepNick(); return err('회원 정보를 읽지 못했습니다: ' + m.err); }
   if (!m.profile) return stepNick();
   location.href = NEXT;
 }
+if (CS.diag.ls === 0) setTimeout(function(){ err('이 브라우저가 첫소절의 정보 저장(사이트 데이터)을 막고 있어, 화면을 옮기면 로그인이 풀립니다. [storage]'); }, 50);
 if (!CS.sb) box.innerHTML = '<p class="err">연결 준비가 덜 되었습니다. 잠시 뒤 다시 열어 주세요.</p>';
 else { CS.sb.auth.onAuthStateChange(function(ev){ if (ev === 'SIGNED_IN' && !email) after(); }); after(); }
 </script></body></html>

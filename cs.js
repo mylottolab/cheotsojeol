@@ -39,8 +39,11 @@ CS.top = function(on){
 };
 
 /* ── 로그인 · 회원 정보 (Supabase) ── */
+CS.diag = { ev: [] };
+try { localStorage.setItem('cs_ls_test', '1'); CS.diag.ls = localStorage.getItem('cs_ls_test') === '1' ? 1 : 0; CS.diag.key = Object.keys(localStorage).some(function(k){ return /^sb-.*auth-token$/.test(k); }) ? 1 : 0; } catch (e) { CS.diag.ls = 0; CS.diag.key = 0; }
 CS.sb = (window.supabase && window.CS_SUPABASE_URL) ? window.supabase.createClient(window.CS_SUPABASE_URL, window.CS_SUPABASE_KEY) : null;
 CS._me = null;
+if (CS.sb) CS.sb.auth.onAuthStateChange(function(ev){ CS.diag.ev.push(ev); });
 CS.me = function(force){
   if (CS._me && !force) return CS._me;
   CS._me = (async function(){
@@ -57,6 +60,6 @@ CS.esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, func
 CS.needLogin = async function(){
   var m = await CS.me();
   if (m.user && m.err) { var bx = document.querySelector('main') || document.body; bx.insertAdjacentHTML('afterbegin', '<div class="card" style="margin:24px 0;padding:18px;color:var(--coral);line-height:1.7">회원 정보를 불러오지 못했습니다. 이 화면을 캡처해서 보내 주세요.<br><span class="faint">' + CS.esc(m.err) + '</span></div>'); return null; }
-  if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search) + '&why=' + (m.user ? 'nick' : 'nosession'); return null; }
+  if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search) + '&why=' + (m.user ? 'nick' : 'nosession') + (m.user ? '' : '&ls=' + CS.diag.ls + '&k=' + CS.diag.key + '&ev=' + CS.diag.ev.join('.') + '&t=' + encodeURIComponent(new Date().toISOString().slice(0, 19)) + (m.err ? '&e=' + encodeURIComponent(m.err) : '')); return null; }
   return m;
 };
