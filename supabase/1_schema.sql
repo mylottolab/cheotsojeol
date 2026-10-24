@@ -25,13 +25,16 @@ create table if not exists public.cs_authors (
   bio            text check (char_length(bio) <= 1000),
   trust_member   boolean not null default false,               -- 음저협 · 함께하는음악저작권협회 등 신탁단체 회원 (곡 등록 때 필수 질문)
   trust_society  text check (trust_society in ('KOMCA','KOSCAP','other')),
-  tax_type       text not null default 'business' check (tax_type in ('business','other_income','company')),   -- 자문: 기본 사업소득 3.3%
+  tax_type       text not null check (tax_type in ('business','other_income','company')),   -- 작가가 스스로 고름: 사업소득 3.3% / 기타소득 8.8% / 사업자(세금계산서)
+  tax_declared_at timestamptz,                                 -- 세금 구분을 고르고 확인한 때
   verified_at    timestamptz,                                  -- 휴대폰 본인 확인
   created_at     timestamptz not null default now()
 );
 alter table public.cs_authors enable row level security;
 alter table public.cs_authors add column if not exists trust_member boolean not null default false;
 alter table public.cs_authors add column if not exists trust_society text;
+alter table public.cs_authors add column if not exists tax_declared_at timestamptz;
+alter table public.cs_authors alter column tax_type drop default;   -- 기본값 없음: 가입 때 작가가 꼭 고름
 
 -- ── 곡 ──────────────────────────────────────────────────────────────
 create table if not exists public.cs_songs (
