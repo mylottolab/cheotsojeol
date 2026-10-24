@@ -9,31 +9,119 @@
 .score{display:flex;gap:5px;margin-top:6px}.score span{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);cursor:pointer;font-weight:800}
 .score span.on{background:var(--gold);color:#1B1405;border-color:var(--gold)}
 @media (max-width:900px){.rv{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
+.tabs{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap}
+.det h4{margin:16px 0 6px;font-size:13px;color:var(--faint);font-weight:700}
+.box2{padding:12px;border-radius:12px;background:var(--panel2);font-size:13px;line-height:1.7}
+.lyr{white-space:pre-wrap;max-height:180px;overflow:auto}
+.err{margin-top:10px;color:var(--coral);font-size:13px;min-height:1em}
+audio{width:100%;margin-top:6px}
+.rep{border-top:1px solid var(--line);padding:10px 0}
 </style></head><body>
 <main class="wrap">
   <div class="sect" style="margin-top:34px"><h2>심사함</h2><span class="faint">관리자 · 심사위원</span></div>
-  <div class="kpis"><div class="card faint">새 신청<b style="color:var(--text)">7</b></div><div class="card faint">자동 판별 경고<b style="color:var(--coral)">1</b></div><div class="card faint">심사 중<b style="color:var(--text)">3</b></div><div class="card faint">이번 달 등록<b style="color:var(--mint)">12</b></div></div>
-  <div class="rv">
-    <div class="card" style="padding:6px 8px;overflow-x:auto"><table class="t">
-      <tr><th>곡</th><th>작가</th><th>자동 판별</th><th>심사</th><th>신청일</th></tr>
-      <tr class="pick on"><td><b>새벽 세 시의 고백</b><br><span class="faint">발라드 · 3:48</span></td><td>윤슬</td><td><span class="tag mint">일치곡 없음</span></td><td><span class="tag gold">심사 중 1/2</span></td><td>10.23</td></tr>
-      <tr class="pick"><td><b>Summer Line</b><br><span class="faint">팝 · 3:02</span></td><td>DJ Ray</td><td><span class="tag coral">⚠ 발표곡과 일치 92%</span></td><td><span class="tag">대기</span></td><td>10.23</td></tr>
-      <tr class="pick"><td><b>나의 작은 정원</b><br><span class="faint">어쿠스틱 · 3:27</span></td><td>하람</td><td><span class="tag mint">일치곡 없음</span></td><td><span class="tag">대기</span></td><td>10.22</td></tr>
-      <tr class="pick"><td><b>Drive Thru</b><br><span class="faint">R&B · 3:40</span></td><td>Mono Lake</td><td><span class="tag mint">일치곡 없음</span></td><td><span class="tag violet">보완 요청</span></td><td>10.21</td></tr>
-    </table></div>
-    <div class="card" style="padding:18px">
-      <b style="font-size:17px">새벽 세 시의 고백</b><div class="faint" style="font-size:13px;margin-top:3px">윤슬 · 작사 · 작곡 100% · 음저협 비회원 · 본인 확인 ✓</div>
-      <div style="margin-top:12px;padding:12px;border-radius:12px;background:var(--panel2);font-size:13px;line-height:1.7">🤖 자동 판별: 발표곡과 일치 없음<br>🏷 파일 정보(태그): 이상 없음<br>📎 창작 증빙: 프로젝트 파일 1개</div>
-      <label class="f">음악성 (1~5)</label><div class="score"><span>1</span><span>2</span><span>3</span><span class="on">4</span><span>5</span></div>
-      <label class="f">표절 의심</label><select class="in"><option>없음</option><option>의심 — 사유 적기</option></select>
-      <label class="f">심사 의견</label><textarea class="in">후렴 멜로디가 분명하고 데모 완성도가 높습니다. 발라드 솔로에 어울림.</textarea>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px"><button class="btn gold">등록</button><button class="btn">보완 요청</button><button class="btn coral">반려</button></div>
-      <div class="hint">심사위원 2명 중 2명이 "등록"이면 공개됩니다. 반려 · 보완 사유는 작가에게 그대로 전달됩니다.</div>
-    </div>
-  </div>
+  <div id="app"><span class="faint">불러오는 중…</span></div>
 </main>
 <script>
 CS.top('cs_admin.html');
-document.querySelectorAll('.score span').forEach(function(x){ x.onclick = function(){ document.querySelectorAll('.score span').forEach(function(y){ y.classList.remove('on'); }); x.classList.add('on'); }; });
-document.querySelectorAll('.pick').forEach(function(r){ r.onclick = function(){ document.querySelectorAll('.pick').forEach(function(y){ y.classList.remove('on'); }); r.classList.add('on'); }; });
+var E = CS.esc, ME, TAB = 'wait', SONGS = [], REPORTS = [], CUR = null;
+var ST = { submitted:['접수','gold'], auto_checked:['자동 판별 끝','gold'], in_review:['심사 중','violet'], needs_fix:['보완 요청','coral'], rejected:['반려','coral'], listed:['공개 중','mint'], paused:['잠시 숨김','coral'], sold:['거래 완료','mint'] };
+var GROUP = { wait:['submitted','auto_checked','in_review','needs_fix'], live:['listed'], off:['paused','rejected','sold'] };
+var ROLE = { lyrics_music:'작사 · 작곡', lyrics:'작사', music:'작곡', arrange:'편곡' }, MODE = { transfer:'양도', exclusive:'독점 이용허락', nonexclusive:'비독점 이용허락' };
+var TAX = { business:'사업소득 3.3%', other_income:'기타소득 8.8%', company:'사업자(세금계산서)' }, KIND = { plagiarism:'표절', rights:'권리 침해', other:'기타' };
+function $(i){ return document.getElementById(i); }
+function tm(s){ return s ? Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) : '—'; }
+function d(t){ return t ? t.slice(5, 10).replace('-', '.') : ''; }
+function tag(st){ var x = ST[st] || [st, '']; return '<span class="tag ' + x[1] + '">' + x[0] + '</span>'; }
+
+async function load(){
+  var r = await CS.sb.from('cs_songs').select('id,title,genre,length_sec,status,created_at,listed_at,author_id,cs_authors(display_name)').order('created_at', { ascending: false }).limit(300);
+  SONGS = r.data || [];
+  var q = await CS.sb.from('cs_reports').select('id,song_id,kind,detail,status,created_at').in('status', ['open','author_reply']).order('created_at');
+  REPORTS = q.data || [];
+  paint();
+}
+function paint(){
+  var n = function(g){ return SONGS.filter(function(s){ return GROUP[g].indexOf(s.status) >= 0; }).length; };
+  var month = new Date().toISOString().slice(0, 7);
+  var L = TAB === 'rep' ? [] : SONGS.filter(function(s){ return GROUP[TAB].indexOf(s.status) >= 0; });
+  $('app').innerHTML = '<div class="kpis"><div class="card faint">심사 대기<b style="color:var(--text)">' + n('wait') + '</b></div><div class="card faint">열린 신고<b style="color:' + (REPORTS.length ? 'var(--coral)' : 'var(--text)') + '">' + REPORTS.length + '</b></div><div class="card faint">공개 중<b style="color:var(--mint)">' + n('live') + '</b></div><div class="card faint">이번 달 공개<b style="color:var(--text)">' + SONGS.filter(function(s){ return (s.listed_at || '').slice(0, 7) === month; }).length + '</b></div></div>' +
+    '<div class="tabs">' + [['wait','심사 대기 ' + n('wait')],['live','공개 중 ' + n('live')],['off','숨김 · 반려 ' + n('off')],['rep','신고 ' + REPORTS.length]].map(function(t){ return '<span class="chip' + (t[0] === TAB ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>' +
+    '<div class="rv"><div class="card" style="padding:6px 8px;overflow-x:auto">' + (TAB === 'rep' ? repList() :
+      (L.length ? '<table class="t"><tr><th>곡</th><th>작가</th><th>상태</th><th>신청일</th></tr>' + L.map(function(s){ return '<tr class="pick' + (CUR && CUR.song.id === s.id ? ' on' : '') + '" data-id="' + s.id + '"><td><b>' + E(s.title) + '</b><br><span class="faint">' + E(s.genre) + ' · ' + tm(s.length_sec) + '</span></td><td>' + E(s.cs_authors ? s.cs_authors.display_name : '') + '</td><td>' + tag(s.status) + '</td><td>' + d(s.created_at) + '</td></tr>'; }).join('') + '</table>' : '<p class="faint" style="padding:18px">여기에 해당하는 곡이 없습니다.</p>')) +
+    '</div><div class="card det" style="padding:18px" id="det">' + (CUR ? detail() : '<span class="faint">왼쪽에서 곡을 고르세요.</span>') + '</div></div>';
+  document.querySelectorAll('.chip[data-t]').forEach(function(c){ c.onclick = function(){ TAB = c.dataset.t; paint(); }; });
+  document.querySelectorAll('.pick').forEach(function(r){ r.onclick = function(){ open(r.dataset.id); }; });
+  bindDetail(); bindReports();
+}
+function repList(){
+  if (!REPORTS.length) return '<p class="faint" style="padding:18px">열린 신고가 없습니다.</p>';
+  return '<div style="padding:4px 10px">' + REPORTS.map(function(r){ var s = SONGS.find(function(x){ return x.id === r.song_id; }) || {};
+    return '<div class="rep"><b>' + E(s.title || '(곡)') + '</b> <span class="tag coral">' + KIND[r.kind] + '</span> <span class="faint">' + d(r.created_at) + '</span><div class="muted" style="font-size:13.5px;margin-top:5px;line-height:1.6">' + E(r.detail) + '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:8px"><button class="btn" style="padding:7px 11px;font-size:13px" data-open="' + r.song_id + '">곡 보기</button><button class="btn coral" style="padding:7px 11px;font-size:13px" data-close="' + r.id + '" data-up="1">신고 인정 (곡 반려)</button><button class="btn" style="padding:7px 11px;font-size:13px" data-close="' + r.id + '" data-up="0">기각 (다시 공개)</button></div></div>'; }).join('') + '</div>';
+}
+function bindReports(){
+  document.querySelectorAll('[data-open]').forEach(function(b){ b.onclick = function(){ open(b.dataset.open); }; });
+  document.querySelectorAll('[data-close]').forEach(function(b){ b.onclick = async function(){
+    if (!confirm(b.dataset.up === '1' ? '신고를 인정하고 곡을 반려할까요?' : '신고를 기각하고 곡을 다시 공개할까요?')) return;
+    var r = await CS.sb.rpc('cs_report_close', { p_id: +b.dataset.close, p_upheld: b.dataset.up === '1' });
+    if (r.error || !r.data.ok) return alert('처리하지 못했습니다: ' + (r.error ? r.error.message : r.data.error));
+    CUR = null; load(); }; });
+}
+async function open(id){
+  $('det').innerHTML = '<span class="faint">불러오는 중…</span>';
+  var r = await CS.sb.rpc('cs_admin_song', { p_song: id });
+  if (r.error || !r.data.ok) { $('det').innerHTML = '<p class="err">불러오지 못했습니다: ' + E(r.error ? r.error.message : r.data.error) + '</p>'; return; }
+  CUR = r.data; var s = CUR.song, st = CS.sb.storage.from('cs-audio');
+  if (s.audio_path) { var u = await st.createSignedUrl(s.audio_path, 3600); CUR.audioUrl = u.data ? u.data.signedUrl : null; }
+  if (s.trust_proof_path) { var t = await st.createSignedUrl(s.trust_proof_path, 3600); CUR.trustUrl = t.data ? t.data.signedUrl : null; }
+  var ls = await st.list(s.author_id, { search: s.id + '_evidence' });
+  if (ls.data && ls.data[0]) { var ev = await st.createSignedUrl(s.author_id + '/' + ls.data[0].name, 3600); CUR.evUrl = ev.data ? ev.data.signedUrl : null; }
+  paint();
+}
+function detail(){
+  var s = CUR.song, a = CUR.author, can = GROUP.wait.indexOf(s.status) >= 0, admin = ME.profile.role === 'admin';
+  var mine = CUR.reviews.filter(function(x){ return x.mine; })[0] || {};
+  return '<b style="font-size:17px">' + E(s.title) + '</b> ' + tag(s.status) +
+    '<div class="faint" style="font-size:13px;margin-top:4px">' + E(a.display_name) + ' · ' + E(s.genre) + (s.mood ? ' · ' + E(s.mood) : '') + ' · ' + tm(s.length_sec) + (s.bpm ? ' · ' + s.bpm + ' BPM' : '') + (s.music_key ? ' · ' + E(s.music_key) : '') + '</div>' +
+    (CUR.audioUrl ? '<audio controls preload="metadata" src="' + CUR.audioUrl + '"></audio>' : '<div class="err">음원 파일을 찾지 못했습니다.</div>') +
+    (s.reject_reason ? '<div class="box2" style="margin-top:8px">작가에게 보낸 사유: ' + E(s.reject_reason) + '</div>' : '') +
+    '<h4>판매 조건</h4><div class="box2">' + s.modes.map(function(m){ return MODE[m]; }).join(' · ') + '<br>희망가 ' + CS.won(s.price_krw) + (s.negotiable ? ' (협상 받음)' : ' (정가)') + '<br>15초 미리듣기: ' + (s.preview_allowed ? '허용 · ' + tm(s.preview_start_sec) + '부터' : '안 함') + '</div>' +
+    '<h4>만든 사람</h4><div class="box2">' + CUR.credits.map(function(c){ return E(c.name) + ' — ' + ROLE[c.role] + ' ' + (+c.share_pct) + '%'; }).join('<br>') +
+      '<br><span class="faint">작가: 신탁단체 ' + (a.trust_member ? '<b style="color:var(--coral)">회원(' + E(a.trust_society) + ')</b>' : '비회원') + ' · ' + TAX[a.tax_type] + ' · 등록곡 ' + a.songs + '</span></div>' +
+    '<h4>증빙</h4><div class="box2">' + (a.trust_member ? (CUR.trustUrl ? '📎 <a href="' + CUR.trustUrl + '" target="_blank" style="color:var(--gold)">신탁 제외 증빙 보기</a>' : '<b style="color:var(--coral)">⚠ 신탁 제외 증빙 없음</b>') + '<br>' : '') +
+      (CUR.evUrl ? '📎 <a href="' + CUR.evUrl + '" target="_blank" style="color:var(--gold)">창작 증빙 보기</a>' : '<span class="faint">창작 증빙 없음(선택)</span>') + '</div>' +
+    '<h4>자동 판별</h4><div class="box2">' + (CUR.checks.length ? CUR.checks.map(function(c){ return c.matched ? '<b style="color:var(--coral)">⚠ 발표곡과 일치: ' + E(c.match_title) + ' — ' + E(c.match_artist) + '</b>' : '✓ 발표곡과 일치 없음'; }).join('<br>') : '<span class="faint">자동 판별은 곧 연결합니다. 지금은 직접 들어 보고 판단해 주세요.</span>') + '</div>' +
+    (s.lyrics ? '<h4>가사</h4><div class="box2 lyr">' + E(s.lyrics) + '</div>' : '') +
+    (s.intro ? '<h4>곡 소개</h4><div class="box2">' + E(s.intro) + '</div>' : '') +
+    (CUR.reviews.length ? '<h4>심사 기록</h4><div class="box2">' + CUR.reviews.map(function(x){ return E(x.who) + ': ' + ({ list:'등록', fix:'보완', reject:'반려' })[x.decision] + ' · 음악성 ' + x.musicality + (x.plagiarism ? ' · <b style="color:var(--coral)">표절 의심</b>' : '') + (x.comment ? ' — ' + E(x.comment) : ''); }).join('<br>') + '</div>' : '') +
+    (CUR.reports.length ? '<h4>신고</h4><div class="box2">' + CUR.reports.map(function(x){ return KIND[x.kind] + ' · ' + d(x.at) + ' · ' + x.status + '<br><span class="faint">' + E(x.detail) + '</span>'; }).join('<br>') + '</div>' : '') +
+    (can ? '<h4>심사</h4><label class="f" style="margin-top:0">음악성 (1~5)</label><div class="score">' + [1,2,3,4,5].map(function(i){ return '<span data-v="' + i + '"' + ((mine.musicality || 3) === i ? ' class="on"' : '') + '>' + i + '</span>'; }).join('') + '</div>' +
+      '<label class="f">표절 의심</label><select class="in" id="pl"><option value="0">없음</option><option value="1"' + (mine.plagiarism ? ' selected' : '') + '>의심 — 의견에 사유 적기</option></select>' +
+      '<label class="f">심사 의견 (보완 · 반려는 사유가 작가에게 그대로 전달됩니다)</label><textarea class="in" id="cm" maxlength="2000">' + E(mine.comment || '') + '</textarea>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px"><button class="btn gold" data-dec="list">등록</button><button class="btn" data-dec="fix">보완 요청</button><button class="btn coral" data-dec="reject">반려</button></div>' +
+      '<div class="hint">' + (admin ? '관리자가 「등록」을 누르면 바로 공개됩니다.' : '심사위원 2명이 「등록」하면 공개됩니다.') + '</div>' : '') +
+    (admin && s.status === 'listed' ? '<h4>공개 관리</h4><button class="btn coral" id="off" style="width:100%">공개 내리기 (잠시 숨김)</button>' : '') +
+    (admin && (s.status === 'paused' || s.status === 'rejected') ? '<h4>공개 관리</h4><button class="btn gold" id="on" style="width:100%">다시 공개하기</button>' : '') +
+    '<div class="err" id="err"></div>';
+}
+function bindDetail(){
+  document.querySelectorAll('.score span').forEach(function(x){ x.onclick = function(){ document.querySelectorAll('.score span').forEach(function(y){ y.classList.remove('on'); }); x.classList.add('on'); }; });
+  document.querySelectorAll('[data-dec]').forEach(function(b){ b.onclick = async function(){
+    var dec = b.dataset.dec, cm = $('cm').value.trim(), v = +(document.querySelector('.score span.on') || { dataset: { v: 3 } }).dataset.v;
+    if (dec !== 'list' && !cm) { $('err').textContent = '보완 요청 · 반려는 사유를 적어 주세요(작가에게 전달됩니다).'; return; }
+    if (!confirm(({ list:'이 곡을 등록(공개)할까요?', fix:'보완 요청을 보낼까요?', reject:'이 곡을 반려할까요?' })[dec])) return;
+    var r = await CS.sb.rpc('cs_review', { p_song: CUR.song.id, p_musicality: v, p_plagiarism: $('pl').value === '1', p_comment: cm || null, p_decision: dec });
+    if (r.error || !r.data.ok) { $('err').textContent = '처리하지 못했습니다: ' + (r.error ? r.error.message : r.data.error); return; }
+    var id = CUR.song.id; await load(); open(id); }; });
+  var off = $('off'), on = $('on');
+  if (off) off.onclick = async function(){ var why = prompt('내리는 이유(작가에게 보입니다):', ''); if (why === null) return;
+    var r = await CS.sb.rpc('cs_admin_set_status', { p_song: CUR.song.id, p_status: 'paused', p_reason: why || null }); if (r.error || !r.data.ok) return alert('처리하지 못했습니다'); var id = CUR.song.id; await load(); open(id); };
+  if (on) on.onclick = async function(){ if (!confirm('다시 공개할까요?')) return;
+    var r = await CS.sb.rpc('cs_admin_set_status', { p_song: CUR.song.id, p_status: 'listed' }); if (r.error || !r.data.ok) return alert('처리하지 못했습니다'); var id = CUR.song.id; await load(); open(id); };
+}
+(async function(){
+  ME = await CS.needLogin(); if (!ME) return;
+  if (['admin','reviewer'].indexOf(ME.profile.role) < 0) { $('app').innerHTML = '<div class="card" style="padding:22px">심사위원 · 관리자만 볼 수 있는 화면입니다.</div>'; return; }
+  load();
+})();
 </script></body></html>

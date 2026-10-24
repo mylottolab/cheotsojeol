@@ -30,6 +30,7 @@ CS.top = function(on){
     '<a class="cta" id="csLogin" href="cs_login.html">로그인</a></nav></div></header>';
   document.body.insertAdjacentHTML('afterbegin', h);
   CS.me().then(function(m){ var a = document.getElementById('csLogin'); if (!a) return;
+    var adm = document.querySelector('.nav a[href="cs_admin.html"]'); if (adm && !(m.profile && (m.profile.role === 'admin' || m.profile.role === 'reviewer'))) adm.style.display = 'none';
     if (m.user) { a.textContent = (m.profile ? m.profile.nickname : '내 정보') + ' · 로그아웃'; a.href = '#'; a.onclick = function(){ CS.sb.auth.signOut().then(function(){ location.href = 'cs_index.html'; }); return false; }; }
     else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
   document.body.insertAdjacentHTML('beforeend', '<div class="preview">미리보기 · 보기 자료입니다</div>' +
