@@ -1,0 +1,36 @@
+/* 첫소절 — 미리보기용 공용 스크립트 (보기 자료 · 진짜 음원 없음) */
+var CS = {};
+CS.SONGS = [
+  { id:'s01', t:'새벽 세 시의 고백', by:'윤슬', genre:'발라드', mood:'잔잔한', bpm:72, key:'E♭', len:'3:48', price:3000000, mode:['양도','독점'], hue:[262,330], pv:true, plays:418, likes:57, isNew:true },
+  { id:'s02', t:'Neon Runner', by:'J.Park', genre:'댄스', mood:'신나는', bpm:124, key:'F#m', len:'3:12', price:5000000, mode:['독점'], hue:[190,280], plays:902, likes:131 },
+  { id:'s03', t:'봄비가 내리면', by:'하람', genre:'어쿠스틱', mood:'따뜻한', bpm:88, key:'G', len:'3:31', price:1500000, mode:['비독점'], hue:[140,60], pv:true, plays:265, likes:40, isNew:true },
+  { id:'s04', t:'Gravity', by:'Mono Lake', genre:'R&B', mood:'몽환적', bpm:94, key:'Am', len:'3:55', price:4000000, mode:['양도','독점'], hue:[220,300], plays:640, likes:88 },
+  { id:'s05', t:'우리 동네 슈퍼스타', by:'김가온', genre:'트로트', mood:'흥겨운', bpm:132, key:'C', len:'3:20', price:2000000, mode:['양도'], hue:[20,350], plays:1204, likes:176 },
+  { id:'s06', t:'Paper Planes', by:'Sora', genre:'팝', mood:'청량한', bpm:110, key:'D', len:'3:05', price:2500000, mode:['독점','비독점'], hue:[180,120], pv:true, plays:533, likes:69, isNew:true },
+  { id:'s07', t:'마지막 정류장', by:'은하수', genre:'록', mood:'뜨거운', bpm:146, key:'Em', len:'4:02', price:3500000, mode:['양도'], hue:[0,40], plays:377, likes:51 },
+  { id:'s08', t:'광고 BGM · Morning Coffee', by:'Lumi', genre:'광고 · 배경음악', mood:'산뜻한', bpm:100, key:'A', len:'1:30', price:800000, mode:['비독점'], hue:[40,180], plays:288, likes:22 }
+];
+CS.GENRES = ['전체','발라드','댄스','팝','R&B','어쿠스틱','록','트로트','광고 · 배경음악'];
+CS.won = function(n){ return n >= 10000 ? (n / 10000).toLocaleString() + '만 원' : n.toLocaleString() + '원'; };
+CS.art = function(s){ return 'background:linear-gradient(135deg,hsl(' + s.hue[0] + ' 62% 42%),hsl(' + s.hue[1] + ' 58% 30%))'; };
+CS.wave = function(seed, n){ var h = ''; for (var i = 0; i < (n || 34); i++) { var v = Math.abs(Math.sin(i * 1.7 + seed) * 0.7 + Math.sin(i * 0.43 + seed * 2) * 0.3); h += '<i style="height:' + Math.round(14 + v * 86) + '%"></i>'; } return h; };
+CS.modeTag = function(m){ return '<span class="tag ' + (m === '양도' ? 'gold' : m === '독점' ? 'violet' : 'mint') + '">' + m + (m === '양도' ? '' : ' 이용허락') + '</span>'; };
+CS.card = function(s, i){
+  return '<a class="card song" href="cs_song.html?id=' + s.id + '">' +
+    '<div class="art" style="' + CS.art(s) + '"><div class="wave">' + CS.wave(i + 1) + '</div><span class="play">▶</span>' +
+    (s.isNew ? '<span class="tag coral" style="position:relative">NEW</span>' : '') + '</div>' +
+    '<div class="body"><div class="t">' + s.t + '</div><div class="by">' + s.by + ' · ' + s.len + '</div>' +
+    '<div class="meta">' + (s.pv ? '<span class="tag coral">▶ 15초 미리듣기</span>' : '') + '<span class="tag">' + s.genre + '</span><span class="tag">' + s.mood + '</span>' + s.mode.map(CS.modeTag).join('') + '</div>' +
+    '<div class="price"><span class="faint">희망가</span><b>' + CS.won(s.price) + '</b></div></div></a>';
+};
+CS.top = function(on){
+  var items = [['cs_index.html','둘러보기'],['cs_pass.html','청취권'],['cs_apply.html','곡 등록 신청'],['cs_talk.html','협상방'],['cs_admin.html','심사함']];
+  var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>첫소절<small>새 노래가 처음 울리는 곳</small></a><nav class="nav">' +
+    items.map(function(x){ return '<a href="' + x[0] + '"' + (x[0] === on ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') +
+    '<a class="cta" href="cs_pass.html">로그인</a></nav></div></header>';
+  document.body.insertAdjacentHTML('afterbegin', h);
+  document.body.insertAdjacentHTML('beforeend', '<div class="preview">미리보기 · 보기 자료입니다</div>' +
+    '<footer class="foot wrap">첫소절은 통신판매중개자로서 거래 당사자가 아니며, 곡의 권리와 책임은 작가와 구매자에게 있습니다.<br>' +
+    '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
+    '<a href="#">이용약관</a> · <b><a href="#">개인정보처리방침</a></b> · <a href="#">작가 약관</a> · <a href="#">취소 · 환불 규정</a></footer>');
+};

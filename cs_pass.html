@@ -1,0 +1,29 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>청취권 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="cs.js"></script>
+<style>
+.plans{display:grid;grid-template-columns:repeat(2,1fr);max-width:760px;gap:14px;margin-top:18px}
+.plan{padding:22px;display:flex;flex-direction:column;gap:8px}
+.plan.best{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.plan h3{font-size:18px}.plan .p{font-size:30px;font-weight:900;color:var(--gold)}.plan .p small{font-size:14px;color:var(--dim);font-weight:700}
+.plan ul{margin:6px 0 10px;padding-left:18px;color:var(--dim);font-size:14px;line-height:1.8}
+.plan .btn{margin-top:auto}
+.note{margin-top:22px;padding:18px;font-size:13.5px;line-height:1.85;color:var(--dim)}
+@media (max-width:820px){.plans{grid-template-columns:1fr}}
+</style></head><body>
+<main class="wrap">
+  <div class="sect" style="margin-top:34px"><h2>청취권</h2><span class="faint">2026-10-24 정한 가격</span></div>
+  <p class="muted" style="margin:0;line-height:1.8">첫소절의 곡은 무료로 공개하지 않습니다(작가가 허락한 곡만 15초 미리듣기). 청취권으로 듣는 만큼, 청취 수익의 78%가 그 곡의 작가에게 돌아갑니다.</p>
+  <div class="plans">
+    <div class="card plan best"><span class="tag gold" style="align-self:flex-start">추천</span><h3>전체 자유청취 30일</h3><div class="p">3,300원 <small>/ 30일</small></div>
+      <ul><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li><li>협상 요청 무제한</li></ul><a class="btn gold" href="cs_song.html?id=s01&pass=1">시작하기 (미리보기)</a></div>
+    <div class="card plan"><h3>전체 자유청취 7일</h3><div class="p">1,100원 <small>/ 7일</small></div>
+      <ul><li>짧게 곡을 찾을 때</li><li>모든 곡 전체 듣기 · 가사 보기</li></ul><a class="btn" href="cs_song.html?id=s01&pass=1">시작하기 (미리보기)</a></div>
+  </div>
+  <div class="card note">
+    · 가격은 부가세 포함입니다. 앱에서는 App Store · Google Play 결제, 사이트에서는 카드 결제로 구매합니다.<br>
+    · 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>
+    · 검토용 다운로드는 곡마다 550원입니다. 결제 뒤 7일 안에 한 곡도 듣지 않았으면 청취권은 전액 환불됩니다. 이미 들은 곡이 있으면 디지털 콘텐츠의 특성상 청약철회가 제한됩니다.<br>
+    · 수익 배분: 청취 수익(앱스토어 수수료를 뺀 금액)의 78%를 곡별 청취 시간 비율로 매달 작가에게 나눕니다.
+  </div>
+</main>
+<script>CS.top('cs_pass.html');</script></body></html>
