@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로그인 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<style>
+.box{max-width:440px;margin:40px auto 0;padding:26px}
+.box h2{font-size:22px}
+.err{margin-top:12px;color:var(--coral);font-size:13.5px;line-height:1.6;min-height:1em}
+.code{letter-spacing:8px;font-size:24px;text-align:center;font-weight:800}
+.agree{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.65;margin-top:12px;color:var(--dim)}
+</style></head><body>
+<main class="wrap"><div class="card box" id="box"></div></main>
+<script>
+CS.top('');
+var box = document.getElementById('box');
+var NEXT = (new URLSearchParams(location.search).get('next') || 'cs_index.html').replace(/^[a-z]+:|^\/\//i, '');
+var email = '';
+function err(t){ document.getElementById('err').textContent = t || ''; }
+function busy(b, on, label){ b.disabled = on; b.textContent = on ? '잠시만요…' : label; }
+
+function stepEmail(){
+  box.innerHTML = '<h2>로그인 · 회원가입</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">이메일 주소만 있으면 됩니다. 비밀번호는 없고, 메일로 받은 <b style="color:var(--text)">6자리 번호</b>를 넣으면 로그인됩니다. 처음이면 그대로 가입됩니다.</p>' +
+    '<label class="f">이메일</label><input class="in" id="em" type="email" autocomplete="email" placeholder="you@example.com">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인 번호 받기</button><div class="err" id="err"></div>';
+  var b = document.getElementById('go'), em = document.getElementById('em');
+  em.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
+  b.onclick = async function(){
+    email = em.value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('이메일 주소를 다시 확인해 주세요.');
+    busy(b, true);
+    var r = await CS.sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + '/cs_login.html?next=' + encodeURIComponent(NEXT) } });
+    busy(b, false, '로그인 번호 받기');
+    if (r.error) return err(/rate|seconds|limit/i.test(r.error.message) ? '메일을 너무 자주 보냈습니다. 1분쯤 뒤에 다시 눌러 주세요.' : '메일을 보내지 못했습니다: ' + r.error.message);
+    stepCode();
+  };
+}
+function stepCode(){
+  box.innerHTML = '<h2>메일을 확인해 주세요</h2><p class="muted" style="line-height:1.8;margin:10px 0 0"><b style="color:var(--text)">' + CS.esc(email) + '</b>(으)로 보낸 메일의 <b style="color:var(--text)">6자리 번호</b>를 넣어 주세요. 메일 안의 링크를 눌러도 됩니다. 메일이 안 보이면 스팸함도 봐 주세요.</p>' +
+    '<label class="f">로그인 번호</label><input class="in code" id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="······">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px">이메일 다시 넣기</button><div class="err" id="err"></div>';
+  var b = document.getElementById('go'), cd = document.getElementById('cd');
+  cd.focus(); cd.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
+  document.getElementById('bk').onclick = stepEmail;
+  b.onclick = async function(){
+    var t = cd.value.replace(/\D/g, '');
+    if (t.length < 6) return err('메일로 받은 번호를 넣어 주세요.');
+    busy(b, true);
+    var r = await CS.sb.auth.verifyOtp({ email: email, token: t, type: 'email' });
+    busy(b, false, '로그인');
+    if (r.error) return err('번호가 맞지 않거나 시간이 지났습니다. 다시 확인하거나 이메일을 다시 넣어 주세요.');
+    after();
+  };
+}
+function stepNick(){
+  box.innerHTML = '<h2>반갑습니다!</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">첫소절에서 쓸 <b style="color:var(--text)">별명</b>을 정해 주세요. 협상방에서 상대에게 보이는 이름입니다(실명이 아니어도 됩니다).</p>' +
+    '<label class="f">별명 (2~20자)</label><input class="in" id="nk" maxlength="20">' +
+    '<label class="agree"><input type="checkbox" id="a1"> [필수] 이용약관에 동의합니다.</label>' +
+    '<label class="agree"><input type="checkbox" id="a2"> [필수] 개인정보 수집 · 이용(이메일 · 별명)에 동의합니다.</label>' +
+    '<label class="agree"><input type="checkbox" id="a3"> [필수] 만 14세 이상입니다.</label>' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">시작하기</button><div class="err" id="err"></div>';
+  var b = document.getElementById('go');
+  b.onclick = async function(){
+    var nk = document.getElementById('nk').value.trim();
+    if (nk.length < 2) return err('별명은 2자 이상으로 정해 주세요.');
+    if (!['a1','a2','a3'].every(function(i){ return document.getElementById(i).checked; })) return err('필수 항목에 모두 동의해 주세요.');
+    busy(b, true);
+    var m = await CS.me(true);
+    var r = await CS.sb.from('cs_profiles').insert({ id: m.user.id, nickname: nk });
+    busy(b, false, '시작하기');
+    if (r.error) return err('저장하지 못했습니다: ' + r.error.message);
+    CS.me(true); location.href = NEXT;
+  };
+}
+async function after(){
+  var m = await CS.me(true);
+  if (!m.user) return stepEmail();
+  if (!m.profile) return stepNick();
+  location.href = NEXT;
+}
+if (!CS.sb) box.innerHTML = '<p class="err">연결 준비가 덜 되었습니다. 잠시 뒤 다시 열어 주세요.</p>';
+else { CS.sb.auth.onAuthStateChange(function(ev){ if (ev === 'SIGNED_IN' && !email) after(); }); after(); }
+</script></body></html>

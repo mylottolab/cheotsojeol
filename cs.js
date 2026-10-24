@@ -27,10 +27,35 @@ CS.top = function(on){
   var items = [['cs_index.html','둘러보기'],['cs_pass.html','청취권'],['cs_apply.html','곡 등록 신청'],['cs_talk.html','협상방'],['cs_admin.html','심사함']];
   var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>첫소절<small>새 노래가 처음 울리는 곳</small></a><nav class="nav">' +
     items.map(function(x){ return '<a href="' + x[0] + '"' + (x[0] === on ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') +
-    '<a class="cta" href="cs_pass.html">로그인</a></nav></div></header>';
+    '<a class="cta" id="csLogin" href="cs_login.html">로그인</a></nav></div></header>';
   document.body.insertAdjacentHTML('afterbegin', h);
+  CS.me().then(function(m){ var a = document.getElementById('csLogin'); if (!a) return;
+    if (m.user) { a.textContent = (m.profile ? m.profile.nickname : '내 정보') + ' · 로그아웃'; a.href = '#'; a.onclick = function(){ CS.sb.auth.signOut().then(function(){ location.href = 'cs_index.html'; }); return false; }; }
+    else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
   document.body.insertAdjacentHTML('beforeend', '<div class="preview">미리보기 · 보기 자료입니다</div>' +
     '<footer class="foot wrap"><b>첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.</b><br>' +
     '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
     '<a href="#">이용약관</a> · <b><a href="#">개인정보처리방침</a></b> · <a href="#">작가 약관</a> · <a href="#">취소 · 환불 규정</a></footer>');
+};
+
+/* ── 로그인 · 회원 정보 (Supabase) ── */
+CS.sb = (window.supabase && window.CS_SUPABASE_URL) ? window.supabase.createClient(window.CS_SUPABASE_URL, window.CS_SUPABASE_KEY) : null;
+CS._me = null;
+CS.me = function(force){
+  if (CS._me && !force) return CS._me;
+  CS._me = (async function(){
+    if (!CS.sb) return { user: null };
+    var r = await CS.sb.auth.getSession(); var u = r.data && r.data.session ? r.data.session.user : null;
+    if (!u) return { user: null };
+    var p = await CS.sb.from('cs_profiles').select('id,nickname,role').eq('id', u.id).maybeSingle();
+    var a = await CS.sb.from('cs_authors').select('user_id,display_name,trust_member,trust_society,tax_type').eq('user_id', u.id).maybeSingle();
+    return { user: u, profile: p.data || null, author: a.data || null };
+  })();
+  return CS._me;
+};
+CS.esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); };
+CS.needLogin = async function(){
+  var m = await CS.me();
+  if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); return null; }
+  return m;
 };

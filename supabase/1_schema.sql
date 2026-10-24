@@ -330,7 +330,9 @@ end $$;
 grant usage on schema public to anon, authenticated, service_role;
 grant select on public.cs_authors, public.cs_song_credits to anon, authenticated;
 grant select, insert, update on public.cs_profiles to authenticated;
-grant insert, update on public.cs_authors to authenticated;
+grant insert on public.cs_authors to authenticated;
+revoke update on public.cs_authors from authenticated;
+grant update (display_name, bio, tax_type, tax_declared_at) on public.cs_authors to authenticated;   -- 신탁 회원 여부는 관리자만
 grant select on public.cs_auto_checks, public.cs_reviews, public.cs_passes, public.cs_payments, public.cs_downloads, public.cs_reports to authenticated;
 grant all on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
@@ -344,7 +346,7 @@ grant execute on function public.cs_song_submit(jsonb), public.cs_review(uuid, i
 -- cs-audio   : 원본 음원(비공개, 작가는 내 폴더에만 올림)
 -- cs-preview : 15초 미리듣기 파일(비공개, 서버가 잠깐 쓰는 주소로 내줌)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('cs-audio', 'cs-audio', false, 52428800, array['audio/mpeg','audio/wav','audio/x-wav','audio/mp4','audio/aac']),
+values ('cs-audio', 'cs-audio', false, 52428800, array['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/wave','audio/vnd.wave','audio/mp4','audio/x-m4a','audio/m4a','audio/aac','image/jpeg','image/png','image/webp','image/heic','application/pdf']),
        ('cs-preview', 'cs-preview', false, 5242880, array['audio/mpeg'])
 on conflict (id) do nothing;
 drop policy if exists p_audio_upload on storage.objects;
