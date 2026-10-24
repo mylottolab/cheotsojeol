@@ -10,7 +10,7 @@ CS.SONGS = [
   { id:'s07', t:'마지막 정류장', by:'은하수', genre:'록', mood:'뜨거운', bpm:146, key:'Em', len:'4:02', price:3500000, mode:['양도'], hue:[0,40], plays:377, likes:51 },
   { id:'s08', t:'광고 BGM · Morning Coffee', by:'Lumi', genre:'광고 · 배경음악', mood:'산뜻한', bpm:100, key:'A', len:'1:30', price:800000, mode:['비독점'], hue:[40,180], plays:288, likes:22 }
 ];
-CS.GENRES = ['전체','발라드','댄스','팝','R&B','어쿠스틱','록','트로트','광고 · 배경음악'];
+CS.GENRES = ['전체','발라드','댄스','팝','힙합','R&B','어쿠스틱','록','트로트','광고 · 배경음악'];
 CS.won = function(n){ return n >= 10000 ? (n / 10000).toLocaleString() + '만 원' : n.toLocaleString() + '원'; };
 CS.art = function(s){ return 'background:linear-gradient(135deg,hsl(' + s.hue[0] + ' 62% 42%),hsl(' + s.hue[1] + ' 58% 30%))'; };
 CS.wave = function(seed, n){ var h = ''; for (var i = 0; i < (n || 34); i++) { var v = Math.abs(Math.sin(i * 1.7 + seed) * 0.7 + Math.sin(i * 0.43 + seed * 2) * 0.3); h += '<i style="height:' + Math.round(14 + v * 86) + '%"></i>'; } return h; };
