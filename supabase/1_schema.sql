@@ -105,7 +105,7 @@ alter table public.cs_reviews enable row level security;
 create table if not exists public.cs_payments (
   order_id    text primary key,                                -- PG 주문번호 · 'apple:거래번호' · 'google:토큰'
   user_id     uuid not null references public.cs_profiles(id),
-  purpose     text not null check (purpose in ('pass7','pass30','download')),
+  purpose     text not null check (purpose in ('pass7','pass15','pass30','download')),
   song_id     uuid references public.cs_songs(id),
   amount_krw  int  not null check (amount_krw > 0),            -- 부가세 포함 결제액
   channel     text not null check (channel in ('card','apple','google')),
@@ -118,13 +118,18 @@ alter table public.cs_payments enable row level security;
 create table if not exists public.cs_passes (
   id          bigserial primary key,
   user_id     uuid not null references public.cs_profiles(id) on delete cascade,
-  kind        text not null check (kind in ('7d','30d')),
+  kind        text not null check (kind in ('7d','15d','30d')),
   starts_at   timestamptz not null default now(),
   ends_at     timestamptz not null,
   order_id    text unique references public.cs_payments(order_id)
 );
 create index if not exists cs_passes_user on public.cs_passes(user_id, ends_at desc);
 alter table public.cs_passes enable row level security;
+-- 15일 청취권 추가(2026-10-25): 이미 만든 표의 허용값도 넓힙니다
+alter table public.cs_payments drop constraint if exists cs_payments_purpose_check;
+alter table public.cs_payments add constraint cs_payments_purpose_check check (purpose in ('pass7','pass15','pass30','download'));
+alter table public.cs_passes drop constraint if exists cs_passes_kind_check;
+alter table public.cs_passes add constraint cs_passes_kind_check check (kind in ('7d','15d','30d'));
 
 create table if not exists public.cs_listens (                 -- 매달 작가 몫을 나누는 근거
   id          bigserial primary key,

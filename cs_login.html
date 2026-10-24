@@ -12,22 +12,24 @@
 CS.top('');
 var box = document.getElementById('box');
 var NEXT = (new URLSearchParams(location.search).get('next') || 'cs_index.html').replace(/^[a-z]+:|^\/\//i, '');
-var email = '';
+var email = '', viaCode = false;
 function err(t){ document.getElementById('err').textContent = t || ''; }
 function busy(b, on, label){ b.disabled = on; b.textContent = on ? '잠시만요…' : label; }
 
 function stepEmail(){
-  box.innerHTML = '<h2>로그인 · 회원가입</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">이메일 주소만 있으면 됩니다. 비밀번호는 없고, 메일로 받은 <b style="color:var(--text)">로그인 번호</b>를 넣으면 로그인됩니다. 처음이면 그대로 가입됩니다.</p>' +
+  box.innerHTML = '<h2>로그인 · 회원가입</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">처음에는 이메일로 받은 <b style="color:var(--text)">로그인 번호</b>로 들어오고, 그때 비밀번호를 만들어 두시면 다음부터는 <b style="color:var(--text)">메일 없이</b> 바로 로그인됩니다. 한 번 로그인한 기기는 로그아웃하기 전까지 로그인이 유지됩니다.</p>' +
     '<label class="f">이메일</label><input class="in" id="em" type="email" autocomplete="email" placeholder="you@example.com">' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인 번호 받기</button><div class="err" id="err"></div>';
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인 번호 받기 (처음 · 비밀번호 잊었을 때)</button><button class="btn" id="pw" style="width:100%;margin-top:8px">🔑 비밀번호로 로그인</button><div class="err" id="err"></div>';
   var b = document.getElementById('go'), em = document.getElementById('em');
+  if (email) em.value = email;
+  document.getElementById('pw').onclick = function(){ email = em.value.trim().toLowerCase(); stepPw(); };
   em.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
   b.onclick = async function(){
     email = em.value.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('이메일 주소를 다시 확인해 주세요.');
     busy(b, true);
     var r = await CS.sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + '/cs_login.html?next=' + encodeURIComponent(NEXT) } });
-    busy(b, false, '로그인 번호 받기');
+    busy(b, false, '로그인 번호 받기 (처음 · 비밀번호 잊었을 때)');
     if (r.error) return err(/rate|seconds|limit/i.test(r.error.message) ? '메일을 너무 자주 보냈습니다. 1분쯤 뒤에 다시 눌러 주세요.' : '메일을 보내지 못했습니다: ' + r.error.message);
     stepCode();
   };
@@ -46,7 +48,7 @@ function stepCode(){
     var r = await CS.sb.auth.verifyOtp({ email: email, token: t, type: 'email' });
     busy(b, false, '로그인');
     if (r.error) return err('번호가 맞지 않거나 시간이 지났습니다. 다시 확인하거나 이메일을 다시 넣어 주세요.');
-    after();
+    viaCode = true; after();
   };
 }
 function stepNick(){
@@ -69,7 +71,46 @@ function stepNick(){
     var chk = await CS.me(true);
     if (!chk.user) return err('로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]');
     if (!chk.profile) return err('별명은 저장했는데 다시 읽지 못했습니다. 이 화면을 캡처해서 보내 주세요. ' + (chk.err || '[noprofile]'));
+    if (viaCode) return stepSetPw();
     location.href = NEXT;
+  };
+}
+function stepPw(){
+  box.innerHTML = '<h2>비밀번호로 로그인</h2>' +
+    '<label class="f">이메일</label><input class="in" id="em" type="email" autocomplete="email" value="' + CS.esc(email) + '">' +
+    '<label class="f">비밀번호</label><input class="in" id="pw1" type="password" autocomplete="current-password">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px">비밀번호가 없거나 잊었어요 → 메일로 번호 받기</button><div class="err" id="err"></div>';
+  var b = document.getElementById('go'), p = document.getElementById('pw1');
+  (email ? p : document.getElementById('em')).focus();
+  p.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
+  document.getElementById('bk').onclick = function(){ email = document.getElementById('em').value.trim().toLowerCase(); stepEmail(); };
+  b.onclick = async function(){
+    email = document.getElementById('em').value.trim().toLowerCase();
+    if (!email || !p.value) return err('이메일과 비밀번호를 넣어 주세요.');
+    busy(b, true);
+    var r = await CS.sb.auth.signInWithPassword({ email: email, password: p.value });
+    busy(b, false, '로그인');
+    if (r.error) return err(/invalid/i.test(r.error.message) ? '이메일이나 비밀번호가 맞지 않습니다. 아직 비밀번호를 만들지 않으셨다면 아래 「메일로 번호 받기」로 들어와 주세요.' : '로그인하지 못했습니다: ' + r.error.message);
+    after();
+  };
+}
+function stepSetPw(){
+  box.innerHTML = '<h2>비밀번호를 만들어 둘까요?</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">만들어 두시면 다음부터 폰이나 다른 컴퓨터에서도 <b style="color:var(--text)">메일을 기다리지 않고</b> 이메일 + 비밀번호로 바로 로그인합니다.</p>' +
+    '<label class="f">새 비밀번호 (8자 이상)</label><input class="in" id="p1" type="password" autocomplete="new-password">' +
+    '<label class="f">한 번 더</label><input class="in" id="p2" type="password" autocomplete="new-password">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">비밀번호 만들기</button><button class="btn ghost" id="sk" style="width:100%;margin-top:8px">다음에 할게요</button><div class="err" id="err"></div>';
+  var b = document.getElementById('go');
+  document.getElementById('sk').onclick = function(){ location.href = NEXT; };
+  b.onclick = async function(){
+    var a = document.getElementById('p1').value, c = document.getElementById('p2').value;
+    if (a.length < 8) return err('비밀번호는 8자 이상으로 만들어 주세요.');
+    if (a !== c) return err('두 칸의 비밀번호가 다릅니다.');
+    busy(b, true);
+    var r = await CS.sb.auth.updateUser({ password: a, data: { has_pw: true } });
+    busy(b, false, '비밀번호 만들기');
+    if (r.error) return err(/weak|short|characters/i.test(r.error.message) ? '더 어려운 비밀번호로 만들어 주세요(영문 · 숫자 섞기).' : '만들지 못했습니다: ' + r.error.message);
+    box.innerHTML = '<h2>비밀번호를 만들었습니다 ✓</h2><p class="muted" style="line-height:1.8">다음부터는 「🔑 비밀번호로 로그인」을 누르세요.</p>';
+    setTimeout(function(){ location.href = NEXT; }, 1500);
   };
 }
 async function after(){
@@ -78,6 +119,7 @@ async function after(){
   try { localStorage.setItem('cs_was_in', '1'); } catch (e) {}
   if (m.err) { stepNick(); return err('회원 정보를 읽지 못했습니다: ' + m.err); }
   if (!m.profile) return stepNick();
+  if (viaCode && !(m.user.user_metadata && m.user.user_metadata.has_pw)) return stepSetPw();
   location.href = NEXT;
 }
 if (CS.diag.ls === 0) setTimeout(function(){ err('이 브라우저가 첫소절의 정보 저장(사이트 데이터)을 막고 있어, 화면을 옮기면 로그인이 풀립니다. [storage]'); }, 50);
