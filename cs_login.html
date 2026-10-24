@@ -54,8 +54,8 @@ function stepCode(){
 function stepNick(){
   box.innerHTML = '<h2>반갑습니다!</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">첫소절에서 쓸 <b style="color:var(--text)">별명</b>을 정해 주세요. 협상방에서 상대에게 보이는 이름입니다(실명이 아니어도 됩니다).</p>' +
     '<label class="f">별명 (2~20자)</label><input class="in" id="nk" maxlength="20">' +
-    '<label class="agree"><input type="checkbox" id="a1"> [필수] 이용약관에 동의합니다.</label>' +
-    '<label class="agree"><input type="checkbox" id="a2"> [필수] 개인정보 수집 · 이용(이메일 · 별명)에 동의합니다.</label>' +
+    '<label class="agree"><input type="checkbox" id="a1"> [필수] <a href="cs_terms.html" target="_blank" style="text-decoration:underline">이용약관</a>에 동의합니다.</label>' +
+    '<label class="agree"><input type="checkbox" id="a2"> [필수] <a href="cs_privacy.html" target="_blank" style="text-decoration:underline">개인정보 수집 · 이용</a>(이메일 · 별명)에 동의합니다.</label>' +
     '<label class="agree"><input type="checkbox" id="a3"> [필수] 만 14세 이상입니다.</label>' +
     '<button class="btn gold" id="go" style="width:100%;margin-top:16px">시작하기</button><div class="err" id="err"></div>';
   var b = document.getElementById('go');

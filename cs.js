@@ -31,12 +31,12 @@ CS.top = function(on){
   document.body.insertAdjacentHTML('afterbegin', h);
   CS.me().then(function(m){ var a = document.getElementById('csLogin'); if (!a) return;
     var adm = document.querySelector('.nav a[href="cs_admin.html"]'); if (adm && !(m.profile && (m.profile.role === 'admin' || m.profile.role === 'reviewer'))) adm.style.display = 'none';
-    if (m.user) { a.textContent = (m.profile ? m.profile.nickname : '내 정보') + ' · 로그아웃'; a.href = '#'; a.onclick = function(){ CS.sb.auth.signOut().then(function(){ location.href = 'cs_index.html'; }); return false; }; }
+    if (m.user) { a.textContent = '👤 ' + (m.profile ? m.profile.nickname : '내 정보'); a.href = 'cs_me.html'; }
     else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
   document.body.insertAdjacentHTML('beforeend', (['cs_talk.html','cs_pass.html'].indexOf(on) >= 0 ? '<div class="preview">미리보기 · 준비 중인 화면입니다</div>' : '') +
     '<footer class="foot wrap"><b>첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.</b><br>' +
     '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
-    '<a href="#">이용약관</a> · <b><a href="#">개인정보처리방침</a></b> · <a href="#">작가 약관</a> · <a href="#">취소 · 환불 규정</a></footer>');
+    '<a href="cs_terms.html">이용약관</a> · <b><a href="cs_privacy.html">개인정보처리방침</a></b> · <a href="cs_terms.html#author">작가 약관</a> · <a href="cs_terms.html#refund">취소 · 환불 규정</a></footer>');
 };
 
 /* ── 로그인 · 회원 정보 (Supabase) ── */

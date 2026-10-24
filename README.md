@@ -11,3 +11,4 @@
 3. supabase/3_pass15_patch.sql
 4. supabase/4_admin_patch.sql
 5. supabase/5_listen_patch.sql
+6. supabase/6_account_patch.sql

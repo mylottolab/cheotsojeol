@@ -63,7 +63,7 @@ function authorForm(){
     '<label class="opt"><input type="radio" name="tax" value="other_income"><div><b>기타소득 8.8% — 어쩌다 한두 번</b><span>본업이 따로 있고, 곡을 가끔 일시적으로 판매하는 분</span></div></label>' +
     '<label class="opt"><input type="radio" name="tax" value="company"><div><b>사업자 — 세금계산서 발행</b><span>개인사업자 · 법인 (원천징수 없이 세금계산서로 정산)</span></div></label>' +
     '<div class="hint">고른 구분대로 세금을 떼고 지급합니다. 사정이 바뀌면 나중에 바꿀 수 있습니다. 어느 쪽인지 모르시면 세무서나 세무사에게 확인해 주세요. 실제와 다르게 골라 생기는 세금 문제는 작가님 책임입니다.</div>' +
-    '<label class="agree"><input type="checkbox" id="ag1"> [필수] 작가 약관에 동의합니다.</label>' +
+    '<label class="agree"><input type="checkbox" id="ag1"> [필수] <a href="cs_terms.html#author" target="_blank" style="text-decoration:underline">작가 약관</a>에 동의합니다.</label>' +
     '<label class="agree"><input type="checkbox" id="ag2"> [필수] 심사를 통과한 곡을 첫소절이 청취권 회원에게 들려주고 검토용 파일로 제공하는 것을 허락하며, 그 대가로 청취 · 다운로드 매출의 78%를 이용료로 받는 데 동의합니다.</label>' +
     '<div class="nav2"><span></span><button class="btn gold" id="go">작가 등록하기</button></div><div class="err" id="err"></div>';
   $('go').onclick = async function(){
