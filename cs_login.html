@@ -65,13 +65,18 @@ function stepNick(){
     var m = await CS.me(true);
     var r = await CS.sb.from('cs_profiles').insert({ id: m.user.id, nickname: nk });
     busy(b, false, '시작하기');
-    if (r.error) return err('저장하지 못했습니다: ' + r.error.message);
-    CS.me(true); location.href = NEXT;
+    if (r.error && r.error.code !== '23505') return err('저장하지 못했습니다: ' + r.error.message + ' [' + (r.error.code || '') + ']');
+    var chk = await CS.me(true);
+    if (!chk.user) return err('로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]');
+    if (!chk.profile) return err('별명은 저장했는데 다시 읽지 못했습니다. 이 화면을 캡처해서 보내 주세요. ' + (chk.err || '[noprofile]'));
+    location.href = NEXT;
   };
 }
 async function after(){
   var m = await CS.me(true);
-  if (!m.user) return stepEmail();
+  if (!m.user) { stepEmail(); if (/why=nosession/.test(location.search) && localStorage.getItem('cs_was_in')) err('앞 화면에서 로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]'); return; }
+  try { localStorage.setItem('cs_was_in', '1'); } catch (e) {}
+  if (m.err) { stepNick(); return err('회원 정보를 읽지 못했습니다: ' + m.err); }
   if (!m.profile) return stepNick();
   location.href = NEXT;
 }

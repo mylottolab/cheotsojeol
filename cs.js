@@ -46,16 +46,17 @@ CS.me = function(force){
   CS._me = (async function(){
     if (!CS.sb) return { user: null };
     var r = await CS.sb.auth.getSession(); var u = r.data && r.data.session ? r.data.session.user : null;
-    if (!u) return { user: null };
+    if (!u) return { user: null, err: r.error ? r.error.message : null };
     var p = await CS.sb.from('cs_profiles').select('id,nickname,role').eq('id', u.id).maybeSingle();
     var a = await CS.sb.from('cs_authors').select('user_id,display_name,trust_member,trust_society,tax_type').eq('user_id', u.id).maybeSingle();
-    return { user: u, profile: p.data || null, author: a.data || null };
+    return { user: u, profile: p.data || null, author: a.data || null, err: (p.error || a.error) ? ((p.error || a.error).message + ' [' + ((p.error || a.error).code || '') + ']') : null };
   })();
   return CS._me;
 };
 CS.esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); };
 CS.needLogin = async function(){
   var m = await CS.me();
-  if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); return null; }
+  if (m.user && m.err) { var bx = document.querySelector('main') || document.body; bx.insertAdjacentHTML('afterbegin', '<div class="card" style="margin:24px 0;padding:18px;color:var(--coral);line-height:1.7">회원 정보를 불러오지 못했습니다. 이 화면을 캡처해서 보내 주세요.<br><span class="faint">' + CS.esc(m.err) + '</span></div>'); return null; }
+  if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search) + '&why=' + (m.user ? 'nick' : 'nosession'); return null; }
   return m;
 };
