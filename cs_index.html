@@ -37,7 +37,7 @@
     </div>
   </section>
 
-  <div class="card pass"><div><b>🎟 청취권이 있어야 전체 듣기를 할 수 있어요</b><br><span>7일권 1,100원 · 30일권 3,300원 · 듣는 만큼 작가에게 수익이 돌아갑니다</span></div><a class="btn gold" href="cs_pass.html">청취권 보기</a></div>
+  <div class="card pass"><div><b>🎟 청취권이 있어야 전체 듣기를 할 수 있어요</b><br><span>7일 1,100원 · 15일 2,200원 · 30일 3,300원 · 듣는 만큼 작가에게 수익이 돌아갑니다</span></div><a class="btn gold" href="cs_pass.html">청취권 보기</a></div>
 
   <div class="sect" id="list"><h2>신곡 둘러보기</h2><span class="faint" id="cnt"></span></div>
   <div class="filters" id="genres"></div>
@@ -58,17 +58,24 @@
 </main>
 <script>
 CS.top('cs_index.html');
-var g = '전체';
+var g = '전체', ALL = null;
 function paint(){
-  var q = document.getElementById('q').value.trim(), m = document.getElementById('mode').value, so = document.getElementById('sort').value;
-  var list = CS.SONGS.filter(function(s){ return (g === '전체' || s.genre === g) && (!m || s.mode.indexOf(m) >= 0) &&
-    (!q || (s.t + s.by + s.mood + s.genre).indexOf(q) >= 0); });
-  list.sort(function(a, b){ return so === 'pop' ? b.plays - a.plays : so === 'low' ? a.price - b.price : so === 'high' ? b.price - a.price : (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0); });
-  document.getElementById('grid').innerHTML = list.map(function(s){ return CS.card(s, CS.SONGS.indexOf(s)); }).join('') || '<p class="muted">맞는 곡이 없습니다.</p>';
+  if (!ALL) { document.getElementById('grid').innerHTML = '<p class="faint">곡을 불러오는 중…</p>'; return; }
+  var q = document.getElementById('q').value.trim().toLowerCase(), m = document.getElementById('mode').value, so = document.getElementById('sort').value;
+  var list = ALL.filter(function(s){ return (g === '전체' || s.genre === g) && (!m || s.mode.indexOf(m) >= 0) &&
+    (!q || (s.t + ' ' + s.by + ' ' + s.mood + ' ' + s.genre).toLowerCase().indexOf(q) >= 0); });
+  list.sort(function(a, b){ return so === 'pop' ? b.plays - a.plays : so === 'low' ? a.price - b.price : so === 'high' ? b.price - a.price : String(b.listed_at).localeCompare(String(a.listed_at)); });
+  document.getElementById('grid').innerHTML = list.map(function(s, i){ return CS.card(s, i); }).join('') ||
+    (ALL.length ? '<p class="muted">맞는 곡이 없습니다.</p>' : '<div class="card" style="padding:26px;grid-column:1/-1;line-height:1.8"><b style="font-size:17px">🎼 첫 곡을 기다리고 있습니다</b><br><span class="muted">심사를 통과한 신곡이 이곳에 올라옵니다. 작가님이시라면 첫 번째 곡의 주인공이 되어 주세요.</span><br><a class="btn gold" style="margin-top:12px" href="cs_apply.html">곡 등록 신청하기</a></div>');
   document.getElementById('cnt').textContent = list.length + '곡';
   document.getElementById('genres').innerHTML = CS.GENRES.map(function(x){ return '<span class="chip' + (x === g ? ' on' : '') + '" data-g="' + x + '">' + x + '</span>'; }).join('');
   document.querySelectorAll('[data-g]').forEach(function(c){ c.onclick = function(){ g = c.dataset.g; paint(); }; });
 }
 ['q','mode','sort'].forEach(function(id){ document.getElementById(id).oninput = paint; });
 paint();
+(async function(){
+  if (!CS.sb) { ALL = []; return paint(); }
+  var r = await CS.sb.from('cs_songs').select(CS.SONG_COLS).eq('status', 'listed').order('listed_at', { ascending: false }).limit(500);
+  ALL = (r.data || []).map(CS.fromDb); paint();
+})();
 </script></body></html>

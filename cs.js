@@ -19,8 +19,8 @@ CS.card = function(s, i){
   return '<a class="card song" href="cs_song.html?id=' + s.id + '">' +
     '<div class="art" style="' + CS.art(s) + '"><div class="wave">' + CS.wave(i + 1) + '</div><span class="play">▶</span>' +
     (s.isNew ? '<span class="tag coral" style="position:relative">NEW</span>' : '') + '</div>' +
-    '<div class="body"><div class="t">' + s.t + '</div><div class="by">' + s.by + ' · ' + s.len + '</div>' +
-    '<div class="meta">' + (s.pv ? '<span class="tag coral">▶ 15초 미리듣기</span>' : '') + '<span class="tag">' + s.genre + '</span><span class="tag">' + s.mood + '</span>' + s.mode.map(CS.modeTag).join('') + '</div>' +
+    '<div class="body"><div class="t">' + CS.esc(s.t) + '</div><div class="by">' + CS.esc(s.by) + ' · ' + s.len + '</div>' +
+    '<div class="meta">' + (s.pv ? '<span class="tag coral">▶ 15초 미리듣기</span>' : '') + '<span class="tag">' + CS.esc(s.genre) + '</span>' + (s.mood ? '<span class="tag">' + CS.esc(s.mood) + '</span>' : '') + s.mode.map(CS.modeTag).join('') + '</div>' +
     '<div class="price"><span class="faint">희망가</span><b>' + CS.won(s.price) + '</b></div></div></a>';
 };
 CS.top = function(on){
@@ -33,7 +33,7 @@ CS.top = function(on){
     var adm = document.querySelector('.nav a[href="cs_admin.html"]'); if (adm && !(m.profile && (m.profile.role === 'admin' || m.profile.role === 'reviewer'))) adm.style.display = 'none';
     if (m.user) { a.textContent = (m.profile ? m.profile.nickname : '내 정보') + ' · 로그아웃'; a.href = '#'; a.onclick = function(){ CS.sb.auth.signOut().then(function(){ location.href = 'cs_index.html'; }); return false; }; }
     else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
-  document.body.insertAdjacentHTML('beforeend', '<div class="preview">미리보기 · 보기 자료입니다</div>' +
+  document.body.insertAdjacentHTML('beforeend', (['cs_talk.html','cs_pass.html'].indexOf(on) >= 0 ? '<div class="preview">미리보기 · 준비 중인 화면입니다</div>' : '') +
     '<footer class="foot wrap"><b>첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.</b><br>' +
     '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
     '<a href="#">이용약관</a> · <b><a href="#">개인정보처리방침</a></b> · <a href="#">작가 약관</a> · <a href="#">취소 · 환불 규정</a></footer>');
@@ -63,4 +63,16 @@ CS.needLogin = async function(){
   if (m.user && m.err) { var bx = document.querySelector('main') || document.body; bx.insertAdjacentHTML('afterbegin', '<div class="card" style="margin:24px 0;padding:18px;color:var(--coral);line-height:1.7">회원 정보를 불러오지 못했습니다. 이 화면을 캡처해서 보내 주세요.<br><span class="faint">' + CS.esc(m.err) + '</span></div>'); return null; }
   if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search) + '&why=' + (m.user ? 'nick' : 'nosession') + (m.user ? '' : '&ls=' + CS.diag.ls + '&k=' + CS.diag.key + '&ev=' + CS.diag.ev.join('.') + '&t=' + encodeURIComponent(new Date().toISOString().slice(0, 19)) + (m.err ? '&e=' + encodeURIComponent(m.err) : '')); return null; }
   return m;
+};
+
+/* ── 실제 곡(데이터베이스) → 화면용 ── */
+CS.SONG_COLS = 'id,title,genre,mood,bpm,music_key,length_sec,intro,modes,price_krw,negotiable,preview_allowed,status,plays,likes,created_at,listed_at,author_id,cs_authors(display_name,bio,trust_member)';
+CS.fromDb = function(r){
+  var h = 0; for (var i = 0; i < r.id.length; i++) h = (h * 31 + r.id.charCodeAt(i)) % 360;
+  var M = { transfer:'양도', exclusive:'독점', nonexclusive:'비독점' }, L = r.length_sec || 0;
+  return { id: r.id, t: r.title, by: r.cs_authors ? r.cs_authors.display_name : '', genre: r.genre, mood: r.mood || '', bpm: r.bpm, key: r.music_key,
+    len: L ? Math.floor(L / 60) + ':' + ('0' + L % 60).slice(-2) : '—', sec: L, price: r.price_krw, mode: (r.modes || []).map(function(m){ return M[m]; }),
+    hue: [h, (h + 70) % 360], pv: r.preview_allowed, plays: r.plays || 0, likes: r.likes || 0, negotiable: r.negotiable, intro: r.intro,
+    bio: r.cs_authors ? r.cs_authors.bio : '', author_id: r.author_id, status: r.status, listed_at: r.listed_at,
+    isNew: r.listed_at && (Date.now() - new Date(r.listed_at).getTime()) < 14 * 864e5 };
 };

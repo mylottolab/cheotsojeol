@@ -97,7 +97,7 @@ function page(){
   if (step === 3) return '<label class="f">판매 방식 (여러 개 고를 수 있어요)</label>' +
     [['transfer','양도','곡의 저작재산권을 구매자에게 넘깁니다. 성명표시권 등 저작인격권은 작가님께 남습니다.'],['exclusive','독점 이용허락','권리는 작가님께 두고, 정한 기간 · 범위 동안 한 구매자만 쓰게 합니다.'],['nonexclusive','비독점 이용허락','여러 구매자가 함께 쓸 수 있게 합니다. 광고 · 영상 배경음악에 많이 씁니다.']].map(function(x){ return '<label class="opt"><input type="checkbox" class="md" value="' + x[0] + '"' + (D.modes.indexOf(x[0]) >= 0 ? ' checked' : '') + '><div><b>' + x[1] + '</b><span>' + x[2] + '</span></div></label>'; }).join('') +
     '<div class="row2"><div><label class="f">희망 판매가 (원, 1만 원 이상)</label><input class="in" id="pr" inputmode="numeric" placeholder="3,000,000" value="' + (D.price_krw ? D.price_krw.toLocaleString() : '') + '"></div><div><label class="f">가격 협상</label><select class="in" id="ng"><option value="1">협상 받기</option><option value="0"' + (D.negotiable ? '' : ' selected') + '>정가로만 판매</option></select></div></div>' +
-    '<label class="f">15초 무료 미리듣기</label><label class="opt"><input type="checkbox" id="pv"' + (D.preview_allowed ? ' checked' : '') + '><div><b>미리듣기 허용</b><span>로그인한 회원에게 이 곡의 15초만 낮은 음질로 들려줍니다(중간에 첫소절 음성 표시). 허용하지 않으면 청취권이 있는 회원만 듣습니다.</span></div></label>' +
+    '<label class="f">15초 무료 미리듣기</label><label class="opt"><input type="checkbox" id="pv"' + (D.preview_allowed ? ' checked' : '') + '><div><b>미리듣기 허용</b><span>로그인한 회원에게 이 곡의 15초만 낮은 음질(모노)로 들려줍니다. 미리듣기 파일은 제출할 때 자동으로 만들어집니다. 허용하지 않으면 청취권이 있는 회원만 듣습니다.</span></div></label>' +
     '<div class="row2"><div><label class="f">미리듣기 시작 지점</label><input class="in" id="ps" placeholder="예) 1:05 (후렴 시작)" value="' + E(D.ps || '') + '"></div><div></div></div>' +
     '<div class="hint">거래가 이뤄지면 수수료 20%와 그 부가세(거래가의 2%)를 뺀 금액이 정산됩니다. 예) 300만 원 → 234만 원(원천징수는 고르신 세금 구분대로).</div>';
   return '<div style="line-height:1.9;font-size:14.5px"><b>제출 전에 확인해 주세요</b><div class="hint" style="margin-top:2px">「' + E(D.title) + '」 · ' + E(D.genre) + ' · 희망가 ' + CS.won(D.price_krw || 0) + '</div></div>' +
@@ -121,6 +121,24 @@ function collect(){
   return true;
 }
 function readCredits(){ document.querySelectorAll('.cn').forEach(function(e){ var c = D.credits[e.dataset.i]; c.name = e.value.trim(); c.role = document.querySelector('.cr[data-i="' + e.dataset.i + '"]').value; c.share_pct = parseFloat(String(document.querySelector('.cp[data-i="' + e.dataset.i + '"]').value).replace(/[^\d.]/g, '')) || 0; }); }
+/* 15초 미리듣기 파일 만들기: 고른 지점부터 15초 · 모노 · 22kHz · 48kbps MP3, 앞뒤 살짝 페이드 */
+function loadLame(){ return window.lamejs ? Promise.resolve() : new Promise(function(ok, no){ var t = document.createElement('script'); t.src = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js'; t.onload = ok; t.onerror = no; document.head.appendChild(t); }); }
+async function makePreview(file, start){
+  await loadLame();
+  var AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  var ab = await new Promise(function(ok, no){ file.arrayBuffer().then(function(b){ ctx.decodeAudioData(b, ok, no); }, no); });
+  ctx.close && ctx.close();
+  var SR = 22050, L = 15, st = Math.max(0, Math.min(start, ab.duration - L));
+  var off = new OfflineAudioContext(1, L * SR, SR), src = off.createBufferSource(), g = off.createGain();
+  src.buffer = ab; g.gain.setValueAtTime(0, 0); g.gain.linearRampToValueAtTime(1, 0.6); g.gain.setValueAtTime(1, L - 0.9); g.gain.linearRampToValueAtTime(0, L);
+  src.connect(g); g.connect(off.destination); src.start(0, st, L);
+  var out = (await off.startRendering()).getChannelData(0), pcm = new Int16Array(out.length);
+  for (var i = 0; i < out.length; i++) { var v = Math.max(-1, Math.min(1, out[i])); pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF; }
+  var enc = new lamejs.Mp3Encoder(1, SR, 48), parts = [];
+  for (var j = 0; j < pcm.length; j += 1152) { var m = enc.encodeBuffer(pcm.subarray(j, j + 1152)); if (m.length) parts.push(new Uint8Array(m)); }
+  var e = enc.flush(); if (e.length) parts.push(new Uint8Array(e));
+  return new Blob(parts, { type: 'audio/mpeg' });
+}
 function ext(f){ var m = /\.([a-z0-9]{2,4})$/i.exec(f.name); return m ? m[1].toLowerCase() : 'bin'; }
 async function submit(btn){
   if ([].slice.call(document.querySelectorAll('.ok')).some(function(x){ return !x.checked; })) return err('네 가지 모두 확인해 주세요.');
@@ -131,16 +149,24 @@ async function submit(btn){
   var tp = null;
   if (D.trust) { var t = await up.upload(base + '_trust.' + ext(D.trust), D.trust, { contentType: D.trust.type }); if (t.error) { btn.disabled = false; btn.textContent = '심사 신청하기'; return err('증빙을 올리지 못했습니다: ' + t.error.message); } tp = t.data.path; }
   if (D.evidence) await up.upload(base + '_evidence.' + ext(D.evidence), D.evidence, { contentType: D.evidence.type });
+  var pvPath = null, pvNote = '';
+  if (D.preview_allowed) {
+    btn.textContent = '15초 미리듣기 만드는 중…';
+    try { var pv = await makePreview(D.audio, sec(D.ps) || 0);
+      var pu = await CS.sb.storage.from('cs-preview').upload(base + '.mp3', pv, { contentType: 'audio/mpeg' });
+      if (pu.error) throw new Error(pu.error.message); pvPath = pu.data.path;
+    } catch (e) { pvNote = ' (이 파일 형식으로는 미리듣기를 만들지 못해, 미리듣기 없이 신청했습니다. MP3로 다시 올리시면 미리듣기를 켤 수 있습니다.)'; }
+  }
   btn.textContent = '신청하는 중…';
   var r = await CS.sb.rpc('cs_song_submit', { p: { id: id, audio_path: a.data.path, trust_proof_path: tp, title: D.title, genre: D.genre, mood: D.mood || null,
     bpm: D.bpm || '', music_key: D.music_key || null, length_sec: D.length_sec || '', lyrics: D.lyrics || null, intro: D.intro || null, modes: D.modes,
-    price_krw: D.price_krw, negotiable: D.negotiable, preview_allowed: D.preview_allowed, preview_start_sec: D.preview_allowed ? (sec(D.ps) || 0) : 0, credits: D.credits } });
+    price_krw: D.price_krw, negotiable: D.negotiable, preview_allowed: D.preview_allowed && !!pvPath, preview_path: pvPath, preview_start_sec: D.preview_allowed ? (sec(D.ps) || 0) : 0, credits: D.credits } });
   var res = r.data || {};
   if (r.error || !res.ok) { btn.disabled = false; btn.textContent = '심사 신청하기';
     var M = { share_not_100: '지분 합계가 100%가 아닙니다.', trust_proof_needed: '신탁 제외 증빙이 필요합니다.', not_author: '작가 등록이 필요합니다.', bad_file: '음원 파일 경로가 올바르지 않습니다.', login: '다시 로그인해 주세요.' };
     return err(M[res.error] || ('신청하지 못했습니다: ' + (r.error ? r.error.message : res.error))); }
   $('stp').innerHTML = '';
-  box.innerHTML = '<div style="text-align:center;padding:30px 10px;line-height:1.9"><div style="font-size:40px">🎼</div><b style="font-size:19px">신청이 접수되었습니다</b><br><span class="muted">「' + E(D.title) + '」 — 음원 자동 판별 뒤 작곡가 심사위원이 심사합니다. 결과는 3~5일 안에 「내 신청곡」에서 볼 수 있습니다.</span><br><button class="btn" style="margin-top:16px" onclick="location.reload()">다른 곡 신청하기</button></div>';
+  box.innerHTML = '<div style="text-align:center;padding:30px 10px;line-height:1.9"><div style="font-size:40px">🎼</div><b style="font-size:19px">신청이 접수되었습니다</b><br><span class="muted">「' + E(D.title) + '」 — 음원 자동 판별 뒤 작곡가 심사위원이 심사합니다. 결과는 3~5일 안에 「내 신청곡」에서 볼 수 있습니다.' + E(pvNote) + '</span><br><button class="btn" style="margin-top:16px" onclick="location.reload()">다른 곡 신청하기</button></div>';
   loadMine();
 }
 function paint(){
