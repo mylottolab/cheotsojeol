@@ -30,7 +30,7 @@ CS.top = function(on){
     '<a class="cta" href="cs_pass.html">로그인</a></nav></div></header>';
   document.body.insertAdjacentHTML('afterbegin', h);
   document.body.insertAdjacentHTML('beforeend', '<div class="preview">미리보기 · 보기 자료입니다</div>' +
-    '<footer class="foot wrap">첫소절은 통신판매중개자로서 거래 당사자가 아니며, 곡의 권리와 책임은 작가와 구매자에게 있습니다.<br>' +
+    '<footer class="foot wrap"><b>첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.</b><br>' +
     '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
     '<a href="#">이용약관</a> · <b><a href="#">개인정보처리방침</a></b> · <a href="#">작가 약관</a> · <a href="#">취소 · 환불 규정</a></footer>');
 };

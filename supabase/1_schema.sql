@@ -23,12 +23,15 @@ create table if not exists public.cs_authors (
   user_id        uuid primary key references public.cs_profiles(id) on delete cascade,
   display_name   text not null check (char_length(display_name) between 1 and 30),
   bio            text check (char_length(bio) <= 1000),
-  komca_member   boolean not null default false,               -- 음저협 회원
-  tax_type       text not null default 'other_income' check (tax_type in ('business','other_income','company')),
+  trust_member   boolean not null default false,               -- 음저협 · 함께하는음악저작권협회 등 신탁단체 회원 (곡 등록 때 필수 질문)
+  trust_society  text check (trust_society in ('KOMCA','KOSCAP','other')),
+  tax_type       text not null default 'business' check (tax_type in ('business','other_income','company')),   -- 자문: 기본 사업소득 3.3%
   verified_at    timestamptz,                                  -- 휴대폰 본인 확인
   created_at     timestamptz not null default now()
 );
 alter table public.cs_authors enable row level security;
+alter table public.cs_authors add column if not exists trust_member boolean not null default false;
+alter table public.cs_authors add column if not exists trust_society text;
 
 -- ── 곡 ──────────────────────────────────────────────────────────────
 create table if not exists public.cs_songs (
@@ -52,6 +55,7 @@ create table if not exists public.cs_songs (
                     check (status in ('submitted','auto_checked','in_review','needs_fix','rejected','listed','paused','sold')),
   audio_path        text,                                       -- cs-audio 안의 원본 경로(비공개)
   preview_path      text,                                       -- 15초 · 낮은 음질 · 음성 표시 파일
+  trust_proof_path  text,                                       -- 신탁단체 회원: 이 곡이 신탁에서 제외되었다는 증빙(cs-audio 안)
   reject_reason     text,
   plays             int  not null default 0,
   likes             int  not null default 0,
@@ -61,6 +65,7 @@ create table if not exists public.cs_songs (
 create index if not exists cs_songs_status on public.cs_songs(status, listed_at desc);
 create index if not exists cs_songs_author on public.cs_songs(author_id);
 alter table public.cs_songs enable row level security;
+alter table public.cs_songs add column if not exists trust_proof_path text;
 
 create table if not exists public.cs_song_credits (            -- 참여자와 지분
   song_id    uuid not null references public.cs_songs(id) on delete cascade,
@@ -190,6 +195,7 @@ create policy p_dl_read on public.cs_downloads for select using (user_id = auth.
 revoke select on public.cs_songs from anon, authenticated;
 grant select (id, author_id, title, genre, mood, bpm, music_key, length_sec, intro, modes, price_krw, negotiable,
               preview_allowed, status, reject_reason, plays, likes, created_at, listed_at) on public.cs_songs to anon, authenticated;
+-- ⚠ 이미 만든 곳에 다시 돌릴 때: 예전 열 이름(komca_member)이 남아 있으면 아래가 옮겨 줍니다
 -- 가사는 청취권이 있을 때만(cs_song_lyrics 함수)
 
 -- ── 서버 함수 ───────────────────────────────────────────────────────
@@ -204,12 +210,15 @@ begin
   if v_path is null or v_path not like v_me::text || '/%' then return jsonb_build_object('ok', false, 'error', 'bad_file'); end if;
   for c in select * from jsonb_array_elements(coalesce(p->'credits', '[]'::jsonb)) loop v_sum := v_sum + (c->>'share_pct')::numeric; end loop;
   if v_sum <> 100 then return jsonb_build_object('ok', false, 'error', 'share_not_100'); end if;
+  /* 자문(2026-10-24): 신탁단체 회원의 곡은 신탁 제외 증빙이 있어야 등록 · 거래 가능 */
+  if (select trust_member from cs_authors where user_id = v_me) and coalesce(p->>'trust_proof_path', '') = '' then
+    return jsonb_build_object('ok', false, 'error', 'trust_proof_needed'); end if;
   insert into cs_songs(id, author_id, title, genre, mood, bpm, music_key, length_sec, lyrics, intro, modes, price_krw, negotiable,
-                       preview_allowed, preview_start_sec, audio_path, status)
+                       preview_allowed, preview_start_sec, audio_path, trust_proof_path, status)
   values (v_id, v_me, p->>'title', p->>'genre', p->>'mood', nullif(p->>'bpm','')::int, p->>'music_key', nullif(p->>'length_sec','')::int,
           p->>'lyrics', p->>'intro', array(select jsonb_array_elements_text(p->'modes')), (p->>'price_krw')::int,
           coalesce((p->>'negotiable')::boolean, true), coalesce((p->>'preview_allowed')::boolean, false),
-          coalesce(nullif(p->>'preview_start_sec','')::int, 0), v_path, 'submitted');
+          coalesce(nullif(p->>'preview_start_sec','')::int, 0), v_path, nullif(p->>'trust_proof_path',''), 'submitted');
   insert into cs_song_credits(song_id, name, role, share_pct)
   select v_id, x->>'name', x->>'role', (x->>'share_pct')::numeric from jsonb_array_elements(p->'credits') x;
   return jsonb_build_object('ok', true, 'id', v_id);
@@ -271,18 +280,62 @@ language sql stable security definer set search_path = public as $$
 $$;
 -- ⚠ 앱스토어 결제분은 애플 · 구글 수수료를 뺀 금액으로 넣어야 합니다(정산 단계에서 고칩니다).
 
+-- ── 권리 침해 신고 (자문: 신고 → 즉시 노출 차단 → 소명 → 처리) ───────
+create table if not exists public.cs_reports (
+  id          bigserial primary key,
+  song_id     uuid not null references public.cs_songs(id) on delete cascade,
+  reporter_id uuid references public.cs_profiles(id),
+  kind        text not null check (kind in ('plagiarism','rights','other')),
+  detail      text not null check (char_length(detail) between 10 and 4000),
+  evidence    text,
+  status      text not null default 'open' check (status in ('open','author_reply','upheld','dismissed')),
+  author_reply text,
+  created_at  timestamptz not null default now(),
+  closed_at   timestamptz
+);
+alter table public.cs_reports enable row level security;
+drop policy if exists p_report_read on public.cs_reports;
+create policy p_report_read on public.cs_reports for select using (reporter_id = auth.uid() or cs_is_staff()
+  or exists (select 1 from cs_songs s where s.id = song_id and s.author_id = auth.uid()));
+
+-- 신고 접수: 그 즉시 곡을 '잠시 내림(paused)' — 거래 대금 지급도 이 상태에선 멈춥니다(2단계 정산에서 확인)
+create or replace function public.cs_report(p_song uuid, p_kind text, p_detail text, p_evidence text default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare v_id bigint;
+begin
+  if auth.uid() is null then return jsonb_build_object('ok', false, 'error', 'login'); end if;
+  if (select count(*) from cs_reports where reporter_id = auth.uid() and created_at > now() - interval '1 day') >= 5 then
+    return jsonb_build_object('ok', false, 'error', 'slow_down'); end if;
+  insert into cs_reports(song_id, reporter_id, kind, detail, evidence) values (p_song, auth.uid(), p_kind, p_detail, p_evidence) returning id into v_id;
+  update cs_songs set status = 'paused' where id = p_song and status = 'listed';
+  return jsonb_build_object('ok', true, 'id', v_id);
+end $$;
+-- 심사위원 · 관리자: 신고 처리(인정 → 반려 상태, 기각 → 다시 공개)
+create or replace function public.cs_report_close(p_id bigint, p_upheld boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare r cs_reports;
+begin
+  if not cs_is_staff() then return jsonb_build_object('ok', false, 'error', 'staff_only'); end if;
+  update cs_reports set status = case when p_upheld then 'upheld' else 'dismissed' end, closed_at = now() where id = p_id returning * into r;
+  if not found then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
+  update cs_songs set status = case when p_upheld then 'rejected' else 'listed' end where id = r.song_id and status = 'paused'
+     and (p_upheld or not exists (select 1 from cs_reports where song_id = r.song_id and status in ('open','author_reply')));
+  return jsonb_build_object('ok', true);
+end $$;
+
 -- ── 권한 (2026-10-30 이후 새 표는 직접 GRANT 해야 보입니다) ───────
 grant usage on schema public to anon, authenticated, service_role;
 grant select on public.cs_authors, public.cs_song_credits to anon, authenticated;
 grant select, insert, update on public.cs_profiles to authenticated;
 grant insert, update on public.cs_authors to authenticated;
-grant select on public.cs_auto_checks, public.cs_reviews, public.cs_passes, public.cs_payments, public.cs_downloads to authenticated;
+grant select on public.cs_auto_checks, public.cs_reviews, public.cs_passes, public.cs_payments, public.cs_downloads, public.cs_reports to authenticated;
 grant all on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
 revoke execute on function public.cs_month_share(date) from public, anon;
 grant execute on function public.cs_song_submit(jsonb), public.cs_review(uuid, int, boolean, text, text),
   public.cs_song_lyrics(uuid), public.cs_listen_log(uuid, int, boolean), public.cs_month_share(date),
-  public.cs_is_staff(), public.cs_has_pass(), public.cs_my_role(), public.cs_my_verified() to authenticated;
+  public.cs_is_staff(), public.cs_has_pass(), public.cs_my_role(), public.cs_my_verified(),
+  public.cs_report(uuid, text, text, text), public.cs_report_close(bigint, boolean) to authenticated;
 
 -- ── 보관함 ──────────────────────────────────────────────────────────
 -- cs-audio   : 원본 음원(비공개, 작가는 내 폴더에만 올림)
