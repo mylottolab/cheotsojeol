@@ -1,0 +1,114 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-en="Payouts & tax — Cheotsojeol">정산 · 세무 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<style>
+.box{max-width:720px;padding:22px;margin-top:14px}
+.box h3{font-size:16px;margin-bottom:6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.err{margin-top:8px;font-size:13px;min-height:1em;color:var(--coral)}.ok{color:var(--mint)}
+.agree{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.65;margin-top:12px;color:var(--dim)}
+.file{display:block;cursor:pointer;border:1.5px dashed rgba(232,182,90,.55);border-radius:12px;padding:14px;text-align:center;color:var(--dim);font-size:13.5px}
+.file input{display:none}.file.ok{border-color:var(--mint);color:var(--mint)}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:6px 10px;font-size:14px;line-height:1.7}.kv span{color:var(--faint)}
+table.t td.n,table.t th.n{text-align:right}
+.box2{padding:12px;border-radius:12px;background:var(--panel2)}
+@media (max-width:640px){.row2{grid-template-columns:1fr}}
+@media print{.top,.foot,.deco-btn,#fx,.noprint{display:none!important}body,html{background:#fff!important;color:#000!important}.card{border:none!important;background:#fff!important}}
+</style></head><body>
+<main class="wrap"><div class="sect" style="margin-top:34px"><h2 data-en="Payouts &amp; tax">정산 · 세무</h2><span class="faint" data-en="For songwriters">작가용</span></div><div id="app"><span class="faint" data-en="Loading…">불러오는 중…</span></div></main>
+<script>
+CS.top('');
+var T = CS.T, E = CS.esc, ME, INFO, ROWS = [];
+var TAX = { business:T('사업소득 3.3%','Business income 3.3%'), other_income:T('기타소득 8.8%','Other income 8.8%'), company:T('사업자(세금계산서)','Registered business (tax invoice)'), nonresident:T('해외 거주자','Non-resident') };
+var STS = { approved:T('확정','Approved'), pending:T('승인 대기 — 승인 전에는 사업소득 3.3%로 계산합니다','Pending — calculated as business income 3.3% until approved'), rejected:T('반려 — 사업소득 3.3%로 처리합니다','Rejected — treated as business income 3.3%') };
+var PS = { confirmed:T('지급 예정','Scheduled'), paid:T('지급 완료','Paid'), held:T('보류','On hold') };
+function $(i){ return document.getElementById(i); }
+function msg(t, ok){ var e = $('err'); e.textContent = t || ''; e.className = 'err' + (ok ? ' ok' : ''); }
+function won(n){ return CS.won(n); }
+function fileBox(id, label, path){ return '<label class="file' + (path ? ' ok' : '') + '"><input type="file" id="' + id + '" accept="image/*,application/pdf">' + (path ? '✓ ' + T('올림 · 바꾸려면 누르세요', 'Uploaded · tap to replace') : label) + '</label>'; }
+var UP = {};
+async function upload(key, file){
+  var p = ME.user.id + '/tax/' + key + '_' + Date.now() + '.' + ((/\.([a-z0-9]{2,4})$/i.exec(file.name) || [0, 'pdf'])[1]).toLowerCase();
+  var r = await CS.sb.storage.from('cs-audio').upload(p, file, { contentType: file.type || 'application/pdf' });
+  if (r.error) throw new Error(r.error.message); return r.data.path;
+}
+async function load(){
+  var i = await CS.sb.from('cs_payout_info').select('*').eq('author_id', ME.user.id).maybeSingle(); INFO = i.data || {};
+  var s = await CS.sb.from('cs_settlements').select('id,period,kind,tax_type,gross_krw,fee_krw,fee_vat_krw,income_tax,local_tax,net_krw,status,paid_at,detail').eq('author_id', ME.user.id).order('period', { ascending: false });
+  ROWS = s.data || [];
+  var a = await CS.sb.from('cs_authors').select('tax_type,tax_requested,tax_status,tax_review_note').eq('user_id', ME.user.id).maybeSingle(); ME.tax = a.data || {};
+  paint();
+}
+function form(){
+  var a = ME.tax, NR = a.tax_type === 'nonresident', CO = a.tax_requested === 'company' || a.tax_type === 'company';
+  var h = '<div class="card box"><h3>' + T('세금 구분', 'Tax status') + '</h3><div class="kv"><span>' + T('적용 중', 'Applied') + '</span><b>' + TAX[a.tax_type] + '</b>' +
+    (a.tax_requested ? '<span>' + T('요청', 'Requested') + '</span><b>' + TAX[a.tax_requested] + ' · ' + STS[a.tax_status] + '</b>' : '') +
+    (a.tax_review_note ? '<span>' + T('관리자 메모', 'Note') + '</span><b>' + E(a.tax_review_note) + '</b>' : '') + '</div>' +
+    '<div class="hint">' + T('바꾸려면 「내 정보」에서 고르세요. 전업 작가 · 지속적 등록자는 사업소득, 일시적 · 단발성 등록자는 기타소득입니다. 기타소득 · 사업자는 관리자 확인 후 적용됩니다.', 'Change it on “My page”. Professional or regular songwriters: business income; one-off sellers: other income. Other income and business status apply after our review.') + ' <a href="cs_me.html" style="color:var(--gold)">' + T('내 정보 ›', 'My page ›') + '</a></div></div>';
+  h += '<div class="card box"><h3>' + T('정산 정보', 'Payout details') + '</h3>';
+  if (!NR) {
+    h += '<div class="row2"><div><label class="f">' + T('실명', 'Legal name') + '</label><input class="in" id="ln" value="' + E(INFO.legal_name || '') + '"></div><div><label class="f">' + T('휴대폰', 'Phone') + '</label><input class="in" id="ph" inputmode="tel" value="' + E(INFO.phone || '') + '"></div></div>' +
+      '<div class="row2"><div><label class="f">' + T('은행', 'Bank') + '</label><input class="in" id="bn" placeholder="' + T('예) 기업은행', 'e.g. IBK') + '" value="' + E(INFO.bank_name || '') + '"></div><div><label class="f">' + T('계좌번호', 'Account no.') + '</label><input class="in" id="ba" inputmode="numeric" value="' + E(INFO.bank_account || '') + '"></div></div>' +
+      '<label class="f">' + T('예금주 (실명과 같아야 합니다)', 'Account holder (must match legal name)') + '</label><input class="in" id="bh" value="' + E(INFO.bank_holder || '') + '">';
+    if (CO) h += '<div class="row2"><div><label class="f">' + T('사업자등록번호', 'Business reg. no.') + '</label><input class="in" id="bz" inputmode="numeric" value="' + E(INFO.biz_no || '') + '"></div><div><label class="f">' + T('사업자등록증', 'Business certificate') + '</label>' + fileBox('bzf', T('사진 또는 PDF', 'Photo or PDF'), INFO.biz_cert_path) + '</div></div>';
+    else h += '<label class="f">' + T('주민등록번호 (원천징수 신고용)', 'Resident registration no. (for withholding tax)') + '</label><input class="in" id="rn" inputmode="numeric" maxlength="14" placeholder="' + (INFO.rrn_last ? E(INFO.rrn_last) + ' ' + T('(저장됨 · 바꿀 때만 입력)', '(saved · enter only to change)') : '000000-0000000') + '">' +
+      '<label class="agree"><input type="checkbox" id="rc"> ' + T('[필수] 고유식별정보(주민등록번호) 수집 · 이용에 동의합니다. 목적: 소득세법에 따른 원천징수 · 지급명세서 제출 / 보관: 지급한 해가 끝난 뒤 5년 / 암호화하여 저장하며, 동의하지 않으면 정산할 수 없습니다.', '[Required] I consent to the collection and use of my resident registration number for withholding tax and filings under the Income Tax Act; kept encrypted for 5 years after the tax year of payment. Payouts are not possible without consent.') + '</label>';
+  } else {
+    h += '<div class="row2"><div><label class="f">Full name (as in passport)</label><input class="in" id="ln" value="' + E(INFO.legal_name || '') + '"></div><div><label class="f">Country (2-letter code)</label><input class="in" id="ct" maxlength="2" placeholder="US, JP, GB…" value="' + E(INFO.country || '') + '"></div></div>' +
+      '<label class="f">Address (English)</label><input class="in" id="ad" value="' + E(INFO.address_en || '') + '">' +
+      '<div class="row2"><div><label class="f">Passport no. or Tax ID</label><input class="in" id="tn" placeholder="' + (INFO.tin_last ? E(INFO.tin_last) + ' (saved · enter only to change)' : '') + '"></div><div><label class="f">PayPal email (for payouts)</label><input class="in" id="pp" type="email" value="' + E(INFO.paypal_email || '') + '"></div></div>' +
+      '<div class="box2" style="margin-top:14px;font-size:13px;line-height:1.75;color:var(--dim)">' + T('한국 세법에 따라 해외 거주 작가에게는 <b>22%(소득세 20% + 지방소득세 2%)</b>를 원천징수합니다. 한국과 조세조약을 맺은 나라의 거주자는 아래 두 서류를 올리고 관리자가 확인하면 <b>조약의 낮은 세율</b>이 적용됩니다.', 'Under Korean tax law, <b>22% (20% income tax + 2% local tax)</b> is withheld from non-resident songwriters. If your country has a tax treaty with Korea, upload the two documents below; after our review the <b>lower treaty rate</b> applies.') + '</div>' +
+      '<div class="row2"><div><label class="f">Certificate of tax residence (from your tax authority)</label>' + fileBox('rcf', 'PDF or photo', INFO.residence_cert_path) + '</div><div><label class="f">Application for reduced treaty rate</label>' + fileBox('tff', 'PDF or photo', INFO.treaty_form_path) + '</div></div>' +
+      '<div class="hint">Treaty status: <b>' + ({ none:'Not submitted', pending:'Under review', approved:'Approved', rejected:'Rejected' })[INFO.treaty_status || 'none'] + '</b>' + (INFO.treaty_note ? ' · ' + E(INFO.treaty_note) : '') + '</div>' +
+      (INFO.overseas_consent_at ? '' : '<label class="agree"><input type="checkbox" id="oc"> [Required] I consent to the international transfer and processing of my personal data (name, address, ID, PayPal) for payouts and Korean tax filings, as described in the <a href="cs_privacy.html" target="_blank" style="text-decoration:underline">Privacy Policy</a>.</label>');
+  }
+  h += '<button class="btn gold" id="sv" style="margin-top:16px">' + T('저장', 'Save') + '</button><div class="err" id="err"></div></div>';
+  return h;
+}
+function history(){
+  var y = new Date().getFullYear() - 1;
+  return '<div class="card box"><h3>' + T('정산 내역', 'Payout history') + '</h3>' + (ROWS.length ?
+    '<div style="overflow-x:auto"><table class="t"><tr><th>' + T('월', 'Month') + '</th><th>' + T('종류', 'Type') + '</th><th class="n">' + T('지급액(과세표준)', 'Gross (taxable)') + '</th><th class="n">' + T('수수료', 'Fee') + '</th><th class="n">' + T('세금', 'Tax') + '</th><th class="n">' + T('받는 금액', 'Net') + '</th><th>' + T('상태', 'Status') + '</th></tr>' +
+    ROWS.map(function(r){ return '<tr><td>' + r.period.slice(0, 7) + '</td><td>' + (r.kind === 'license' ? T('청취 · 다운로드 이용료', 'Listening/download fees') : T('곡 거래', 'Song deal')) + '</td><td class="n">' + won(r.gross_krw) + '</td><td class="n">' + won(r.fee_krw + r.fee_vat_krw) + '</td><td class="n">' + won(r.income_tax + r.local_tax) + '</td><td class="n"><b>' + won(r.net_krw) + '</b></td><td>' + (PS[r.status] || r.status) + '</td></tr>'; }).join('') + '</table></div>' +
+    '<div class="noprint" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><select class="in" id="yr" style="max-width:120px">' + [y + 1, y, y - 1].map(function(v){ return '<option>' + v + '</option>'; }).join('') + '</select><button class="btn" id="cert">' + T('🧾 원천징수 내역 확인서 (PDF로 저장)', '🧾 Withholding statement (save as PDF)') + '</button></div>' +
+    '<div class="hint">' + T('확인서는 인쇄 창에서 「PDF로 저장」을 고르면 됩니다. 국세청 원천징수영수증은 다음 해 지급명세서 제출 뒤 홈택스에서도 볼 수 있습니다.', 'Choose “Save as PDF” in the print dialog. Official Korean receipts are also available on Hometax after the annual filing.') + '</div>'
+    : '<p class="muted">' + T('아직 정산 내역이 없습니다. 곡이 들리거나 팔리면 매달 말일에 마감해 다음 달 15일에 지급합니다.', 'No payouts yet. Earnings close at the end of each month and are paid on the 15th of the next month.') + '</p>') + '</div>';
+}
+function paint(){
+  $('app').innerHTML = form() + history();
+  ['bzf','rcf','tff'].forEach(function(id){ var e = $(id); if (e) e.onchange = async function(){ var f = e.files[0]; if (!f) return; if (f.size > 20971520) return msg(T('20MB 이하로 올려 주세요.', 'Max 20MB.'));
+    msg(T('올리는 중…', 'Uploading…'), true); try { UP[id] = await upload({ bzf:'biz', rcf:'residence', tff:'treaty' }[id], f); e.parentNode.classList.add('ok'); e.parentNode.lastChild.textContent = '✓ ' + f.name; msg(T('올렸습니다. 「저장」을 눌러 주세요.', 'Uploaded. Press Save.'), true); } catch (x) { msg(T('올리지 못했습니다: ', 'Upload failed: ') + x.message); } }; });
+  $('sv').onclick = save;
+  if ($('cert')) $('cert').onclick = cert;
+}
+function v(id){ var e = $(id); return e ? e.value.trim() : ''; }
+async function save(){
+  var NR = ME.tax.tax_type === 'nonresident', p = { legal_name: v('ln'), phone: v('ph'), bank_name: v('bn'), bank_account: v('ba'), bank_holder: v('bh'), biz_no: v('bz'),
+    biz_cert_path: UP.bzf || '', country: v('ct'), address_en: v('ad'), tin: v('tn'), paypal_email: v('pp'), residence_cert_path: UP.rcf || '', treaty_form_path: UP.tff || '' };
+  if (v('rn')) { if (v('rn').replace(/\D/g, '').length !== 13) return msg(T('주민등록번호 13자리를 확인해 주세요.', 'Check the 13-digit number.')); if (!$('rc').checked) return msg(T('주민등록번호 수집 · 이용에 동의해 주세요.', 'Please give consent.')); p.rrn = v('rn'); p.rrn_consent = true; }
+  if (!NR && p.bank_holder && p.legal_name && p.bank_holder !== p.legal_name) return msg(T('예금주가 실명과 다릅니다. 본인 명의 계좌만 등록할 수 있습니다.', 'The account holder must be you.'));
+  if (NR) { if ($('oc') && !$('oc').checked) return msg('Please consent to the international transfer of your data.'); p.overseas_consent = true; if (p.country && !/^[A-Za-z]{2}$/.test(p.country)) return msg('Use a 2-letter country code, e.g. US.'); }
+  var r = await CS.sb.rpc('cs_payout_save', { p: p }), d = r.data || {};
+  if (r.error || !d.ok) return msg(({ bad_rrn:T('주민등록번호가 올바르지 않습니다.', 'Invalid number.'), rrn_consent:T('동의가 필요합니다.', 'Consent required.'), overseas_consent:'Consent required.' })[d.error] || (T('저장하지 못했습니다: ', 'Could not save: ') + (r.error ? r.error.message : d.error)));
+  UP = {}; await load(); msg(T('저장했습니다 ✓', 'Saved ✓'), true);
+}
+function cert(){
+  var yr = $('yr').value, R = ROWS.filter(function(r){ return r.period.slice(0, 4) === yr && (r.status === 'paid' || r.status === 'confirmed'); });
+  var sum = function(k){ return R.reduce(function(a, r){ return a + (+r[k] || 0); }, 0); };
+  var w = window.open('', '_blank');
+  w.document.write('<html lang="ko"><head><meta charset="utf-8"><title>' + T('원천징수 내역 확인서', 'Withholding statement') + ' ' + yr + '</title><style>body{font-family:sans-serif;padding:30px;color:#111}table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}th,td{border:1px solid #999;padding:6px;text-align:right}th:first-child,td:first-child{text-align:left}h1{font-size:20px}.k{font-size:13px;line-height:1.8}</style></head><body>' +
+    '<h1>' + T('원천징수 내역 확인서', 'Withholding statement') + ' (' + yr + ')</h1><div class="k">' +
+    T('지급자: 위브앱솔루션(첫소절) · 사업자등록번호 206-08-71754 · 대표 이미화', 'Payer: WEAPP Solution (Cheotsojeol) · Business reg. 206-08-71754 · CEO Mihwa Lee') + '<br>' +
+    T('소득자: ', 'Payee: ') + E(INFO.legal_name || ME.author.display_name) + (INFO.rrn_last ? ' · ' + E(INFO.rrn_last) : '') + (INFO.country ? ' · ' + E(INFO.country) : '') + '<br>' + T('소득 구분: ', 'Income type: ') + TAX[ME.tax.tax_type] + '</div>' +
+    '<table><tr><th>' + T('지급 월', 'Month') + '</th><th>' + T('지급액(과세표준)', 'Gross') + '</th><th>' + T('소득세', 'Income tax') + '</th><th>' + T('지방소득세', 'Local tax') + '</th><th>' + T('수수료', 'Fee') + '</th><th>' + T('실지급액', 'Net paid') + '</th></tr>' +
+    R.map(function(r){ return '<tr><td>' + r.period.slice(0, 7) + (r.kind === 'deal' ? T(' (곡 거래)', ' (deal)') : '') + '</td><td>' + (+r.gross_krw).toLocaleString() + '</td><td>' + (+r.income_tax).toLocaleString() + '</td><td>' + (+r.local_tax).toLocaleString() + '</td><td>' + (+r.fee_krw + +r.fee_vat_krw).toLocaleString() + '</td><td>' + (+r.net_krw).toLocaleString() + '</td></tr>'; }).join('') +
+    '<tr><th>' + T('합계', 'Total') + '</th><th>' + sum('gross_krw').toLocaleString() + '</th><th>' + sum('income_tax').toLocaleString() + '</th><th>' + sum('local_tax').toLocaleString() + '</th><th>' + (sum('fee_krw') + sum('fee_vat_krw')).toLocaleString() + '</th><th>' + sum('net_krw').toLocaleString() + '</th></tr></table>' +
+    '<p class="k" style="margin-top:18px">' + T('(단위: 원) 위 금액을 지급하고 원천징수하였음을 확인합니다. 이 확인서는 참고용이며, 법정 원천징수영수증은 지급명세서 제출 후 홈택스에서 조회할 수 있습니다.', '(KRW) We confirm the payments and withholding above. This statement is for reference; the statutory receipt is available on Hometax after the annual filing.') + '<br>' + new Date().toISOString().slice(0, 10) + '</p>' +
+    '<script>setTimeout(function(){ print(); }, 300);<\/script></body></html>');
+  w.document.close();
+}
+(async function(){
+  ME = await CS.needLogin(); if (!ME) return;
+  if (!ME.author) { $('app').innerHTML = '<div class="card box">' + T('작가 등록을 한 분만 쓸 수 있는 화면입니다.', 'This page is for registered songwriters.') + ' <a href="cs_apply.html" style="color:var(--gold)">' + T('작가 등록 ›', 'Create profile ›') + '</a></div>'; return; }
+  load();
+})();
+</script></body></html>
