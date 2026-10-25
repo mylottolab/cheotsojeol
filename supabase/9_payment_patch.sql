@@ -22,6 +22,9 @@ insert into public.cs_prices(purpose, amount_krw, days, name_ko, name_en) values
   ('pass30', 3300, 30, '첫소절 청취권 30일', 'Cheotsojeol pass 30 days'),
   ('download', 550, null, '첫소절 검토용 다운로드', 'Cheotsojeol review download')
 on conflict (purpose) do nothing;
+-- PayPal(해외) 달러 가격 — PayPal 소액결제 요율 적용 계정이라 원화 가격에 맞춘 쉬운 값으로(2026-10-25)
+update public.cs_prices set amount_usd = v.usd from (values ('pass7', 0.99), ('pass15', 1.99), ('pass30', 2.99), ('download', 0.49)) v(p, usd)
+ where purpose = v.p and amount_usd is null;
 
 create table if not exists public.cs_orders (
   order_id    text primary key,                       -- CSJ_{종류}_{시각}_{임의}
@@ -89,4 +92,4 @@ grant execute on function public.cs_order_lock(text, int), public.cs_order_compl
 grant all on public.cs_orders, public.cs_prices to service_role;
 
 notify pgrst, 'reload schema';
-select purpose, amount_krw, days from public.cs_prices order by amount_krw;
+select purpose, amount_krw, amount_usd, days from public.cs_prices order by amount_krw;
