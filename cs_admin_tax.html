@@ -32,7 +32,7 @@ function csv(name, rows){
 async function loadAll(){
   var a = await CS.sb.rpc('cs_admin_authors'); AU = a.data || [];
   var r = await CS.sb.from('cs_tax_rates').select('*').order('country'); RATES = r.data || [];
-  var py = await CS.sb.rpc('cs_admin_payments', { p_days: 90 }); PAY = py.data || [];
+  var py = await CS.sb.rpc('cs_admin_payments', { p_days: 90 }); PAY = Array.isArray(py.data) ? py.data : [];
   var s = await CS.sb.from('cs_settlements').select('*').eq('period', PERIOD + '-01').order('net_krw', { ascending: false }); SET = s.data || [];
   paint();
 }
