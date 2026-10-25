@@ -1,0 +1,24 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-en="Payment result — Cheotsojeol">결제 결과 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<style>.box{max-width:460px;margin:50px auto 0;padding:30px 24px;text-align:center;line-height:1.9}.big{font-size:44px}</style></head><body>
+<main class="wrap"><div class="card box" id="box"><span class="faint" data-en="Checking…">확인하는 중…</span></div></main>
+<script>
+CS.top('');
+var T = CS.T, q = new URLSearchParams(location.search), st = q.get('status'), oid = q.get('orderId') || '', box = document.getElementById('box');
+function fail(m){ box.innerHTML = '<div class="big">⚠️</div><b style="font-size:19px">' + T('결제가 끝나지 않았습니다', 'Payment not completed') + '</b><br><span class="muted">' + CS.esc(m || '') + '</span><br><span class="faint" style="font-size:13px">' + T('돈이 빠져나갔는데 이 화면이 보이면 주문번호와 함께 weapps.kr@gmail.com 으로 알려 주세요.', 'If you were charged, email weapps.kr@gmail.com with your order number.') + (oid ? '<br>' + CS.esc(oid) : '') + '</span><br><a class="btn gold" style="margin-top:14px" href="cs_pass.html">' + T('청취권 화면으로', 'Back to passes') + '</a>'; }
+async function check(n){
+  if (st === 'fail') return fail(q.get('msg'));
+  var me = await CS.me(); if (!me.user) return fail(T('로그인이 풀렸습니다. 다시 로그인한 뒤 「내 정보」에서 청취권을 확인해 주세요.', 'You were logged out. Log in and check your pass on My page.'));
+  var r = await CS.sb.from('cs_orders').select('status,purpose,fail_msg').eq('order_id', oid).maybeSingle(), o = r.data;
+  if (o && o.status === 'paid') {
+    var p = await CS.sb.from('cs_passes').select('ends_at').gte('ends_at', new Date().toISOString()).order('ends_at', { ascending: false }).limit(1);
+    var end = p.data && p.data[0] ? p.data[0].ends_at.slice(0, 10) : '';
+    box.innerHTML = '<div class="big">🎧</div><b style="font-size:20px">' + T('결제가 끝났습니다', 'Payment complete') + '</b><br><span class="muted">' + (end ? T('청취권이 <b style="color:var(--text)">' + end + '</b>까지 있습니다. 이제 모든 곡을 전체로 들을 수 있어요.', 'Your pass is active until <b style="color:var(--text)">' + end + '</b>. Enjoy every song in full.') : '') + '</span><br><a class="btn gold" style="margin-top:14px" href="cs_index.html">' + T('곡 들으러 가기', 'Start listening') + '</a>';
+    return;
+  }
+  if (o && o.status === 'failed') return fail(o.fail_msg);
+  if (n < 8) { box.innerHTML = '<span class="faint">' + T('결제를 확인하는 중입니다…', 'Confirming your payment…') + '</span>'; return setTimeout(function(){ check(n + 1); }, 1500); }
+  fail(T('확인이 늦어지고 있습니다. 잠시 뒤 「내 정보」에서 청취권을 확인해 주세요.', 'Confirmation is taking longer. Please check My page in a moment.'));
+}
+check(0);
+</script></body></html>

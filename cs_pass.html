@@ -23,7 +23,12 @@
     <div class="card plan" data-k="30d"><span class="tag gold" style="align-self:flex-start" data-en="Best value">추천</span><h3 data-en="All-access 30 days">전체 자유청취 30일</h3><div class="p" data-en="₩3,300 <small>/ 30 days</small>">3,300원 <small>/ 30일</small></div>
       <ul data-en="<li>About ₩110 a day</li><li>Full songs · lyrics</li><li>Save favorites</li><li>Unlimited deal requests</li>"><li>하루 110원꼴</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li><li>협상 요청 무제한</li></ul></div>
   </div>
-  <div style="max-width:1000px;margin-top:16px"><button class="btn gold" id="buy" style="width:100%;max-width:420px"></button><div class="hint" id="buyh"></div></div>
+  <div style="max-width:1000px;margin-top:16px"><div id="mypass" class="hint" style="margin-bottom:8px"></div><button class="btn gold" id="buy" style="width:100%;max-width:420px"></button>
+    <div id="buyer" class="card" style="display:none;max-width:420px;padding:16px;margin-top:10px"><label class="f" style="margin-top:0" data-en="Name for the card receipt">결제하시는 분 이름 (카드 영수증용)</label><input class="in" id="bname" maxlength="30"><label class="f" data-en="Mobile (optional)">휴대폰 (선택)</label><input class="in" id="btel" inputmode="tel" maxlength="20">
+      <label class="agree" style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.65;margin-top:12px;color:var(--dim)"><input type="checkbox" id="bagree"> <span data-en="I understand that once I play a song, my right to withdraw (refund) is limited because digital content has been delivered. If I play nothing within 7 days, I get a full refund.">곡을 재생하면 디지털 콘텐츠 제공이 시작되어 청약철회(환불)가 제한되고, 7일 안에 한 곡도 재생하지 않으면 전액 환불됨을 확인했습니다.</span></label>
+      <button class="btn gold" id="goCard" style="width:100%;margin-top:12px" data-en="💳 Pay by card (Korean cards)">💳 카드로 결제하기</button>
+      <div id="ppWrap" style="display:none;margin-top:12px"><div class="hint" id="ppLabel" style="margin:0 0 6px"></div><div id="ppBox"></div></div></div>
+    <div class="hint" id="buyh"></div></div>
   <div class="card note" data-en="· Prices include VAT. In the app you pay via App Store / Google Play; on the website by card (KG Inicis) or PayPal.<br>· A pass allows personal listening for review only; no rights to the songs are transferred. Recording, distributing or publishing is not allowed.<br>· Review downloads are ₩550 per song. If you have not played any song within 7 days of purchase, the pass is fully refunded. Once you have played a song, withdrawal is limited because digital content has been delivered.<br>· Revenue share: 78% of pass revenue (after app store fees) is split monthly among songwriters by listening time.">
     · 가격은 부가세 포함입니다. 앱에서는 App Store · Google Play 결제, 사이트에서는 카드 결제로 구매합니다.<br>
     · 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>
@@ -32,10 +37,62 @@
   </div>
 </main>
 <script>CS.top('cs_pass.html');
-var T = CS.T, PRICE = { '7d': T('1,100원 · 7일', '₩1,100 · 7 days'), '15d': T('2,200원 · 15일', '₩2,200 · 15 days'), '30d': T('3,300원 · 30일', '₩3,300 · 30 days') }, sel = '30d';
-function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); document.getElementById('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
+var T = CS.T, PRICE = { '7d': T('1,100원 · 7일', '₩1,100 · 7 days'), '15d': T('2,200원 · 15일', '₩2,200 · 15 days'), '30d': T('3,300원 · 30일', '₩3,300 · 30 days') }, sel = '30d', ME = null;
+function $(i){ return document.getElementById(i); }
+function hint(t, bad){ $('buyh').innerHTML = t ? '<b style="color:' + (bad ? 'var(--coral)' : 'var(--gold)') + '">' + CS.esc(t) + '</b>' : ''; }
+function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); $('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
 document.querySelectorAll('.plan').forEach(function(p){ p.onclick = function(){ pick(p.dataset.k); }; });
-document.getElementById('buyh').textContent = T('결제는 곧 열립니다(카드 · 앱스토어 결제 준비 중).', 'Payments open soon (card and app store payments are being set up).');
-document.getElementById('buy').onclick = function(){ document.getElementById('buyh').innerHTML = '<b style="color:var(--gold)">' + T('결제는 곧 열립니다. 조금만 기다려 주세요!', 'Payments are opening soon — thanks for waiting!') + '</b>'; };
+/* 이니시스 SDK 는 미리 받아 둡니다(클릭 뒤에 받으면 팝업 차단으로 오인) */
+var iniP = null;
+function loadIni(){ if (window.INIPayPro) return Promise.resolve(); if (iniP) return iniP; iniP = new Promise(function(ok, no){ var s = document.createElement('script'); s.src = 'https://paypro.inicis.com/std/payment/js/INIPayPro_v2.js'; s.charset = 'UTF-8'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); return iniP; }
+loadIni().catch(function(){});
+$('buy').onclick = function(){
+  if (!ME || !ME.user) { location.href = 'cs_login.html?next=cs_pass.html'; return; }
+  $('buyer').style.display = ''; if (!$('bname').value) $('bname').value = ME.profile ? ME.profile.nickname : '';
+  $('buyer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+$('goCard').onclick = async function(){
+  hint('');
+  var name = $('bname').value.trim(); if (!name) return hint(T('이름을 넣어 주세요.', 'Please enter a name.'), true);
+  if (!$('bagree').checked) return hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true);
+  var b = this; b.disabled = true;
+  try {
+    var r = await CS.sb.functions.invoke('cs-inicis-prepare', { body: { purpose: 'pass' + sel.replace('d', ''), buyername: name, buyertel: $('btel').value.trim() } });
+    var d = r.data || {}; if (r.error || d.error) throw new Error(d.error || (r.error && r.error.message) || 'error');
+    await loadIni(); if (!window.INIPayPro || !window.INIPayPro.requestPayment) throw new Error(T('결제창을 불러오지 못했습니다. 새로고침 후 다시 해 주세요.', 'Could not load the payment window. Refresh and try again.'));
+    window.INIPayPro.requestPayment({ P_MID: d.mid, P_OID: d.oid, P_PAY_TYPE: 'CARD', P_DEVICE_TYPE: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'MOBILE' : 'WEB', P_IDCCODE: 'Y',
+      P_AMT: d.amt, P_GOODS: d.goodname, P_UNAME: d.buyername, P_MOBILE: d.buyertel || '', P_EMAIL: d.buyeremail || '', P_NEXT_URL: d.nextUrl, P_NOTI_URL: d.notiUrl, P_CLOSE_URL: d.closeUrl,
+      P_CHARSET: 'UTF-8', P_TIMESTAMP: d.timestamp, P_CHKFAKE: d.chkfake });
+    setTimeout(function(){ b.disabled = false; }, 4000);
+  } catch (e) { hint(T('결제를 시작하지 못했습니다: ', 'Could not start payment: ') + e.message, true); b.disabled = false; }
+};
+/* ── PayPal(해외 손님) — 가격표에 달러 값이 있는 상품만 ── */
+var USD = {}, ppReady = false;
+async function loadPayPal(){
+  if (ppReady) return true;
+  var r = await CS.sb.functions.invoke('cs-paypal-client-id', { body: {} }); var d = r.data || {}; if (!d.clientId) return false;
+  await new Promise(function(ok, no){ var s = document.createElement('script'); s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(d.clientId) + '&currency=USD&intent=capture&components=buttons'; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+  ppReady = true; return true;
+}
+async function showPayPal(){
+  var k = 'pass' + sel.replace('d', ''); if (!USD[k]) { $('ppWrap').style.display = 'none'; return; }
+  try { if (!await loadPayPal()) return; } catch (e) { return; }
+  $('ppWrap').style.display = ''; $('ppLabel').textContent = T('해외 카드 · PayPal: US$', 'International card / PayPal: US$') + USD[k]; $('ppBox').innerHTML = '';
+  window.paypal.Buttons({ style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+    onClick: function(){ if (!$('bagree').checked) { hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true); return false; } },
+    createOrder: async function(){ var r = await CS.sb.functions.invoke('cs-paypal-create', { body: { purpose: 'pass' + sel.replace('d', '') } }); var d = r.data || {}; if (!d.id) throw new Error(d.error || 'PayPal error'); return d.id; },
+    onApprove: async function(data){ var r = await CS.sb.functions.invoke('cs-paypal-capture', { body: { orderID: data.orderID } }); var d = r.data || {};
+      location.href = 'cs_pay_result.html?status=' + (d.status === 'success' ? 'success' : 'fail') + '&orderId=' + encodeURIComponent(d.orderId || '') + (d.error ? '&msg=' + encodeURIComponent(d.error) : ''); },
+    onError: function(e){ hint(T('PayPal 결제를 끝내지 못했습니다: ', 'PayPal payment failed: ') + (e && e.message || e), true); }
+  }).render('#ppBox');
+}
+var _pick = pick; pick = function(k){ _pick(k); if ($('buyer').style.display !== 'none') showPayPal(); };
+var _buy = $('buy').onclick; $('buy').onclick = function(){ _buy(); if (ME && ME.user) showPayPal(); };
 pick('30d');
+CS.sb && CS.sb.from('cs_prices').select('purpose,amount_usd').then(function(r){ (r.data || []).forEach(function(p){ if (p.amount_usd) USD[p.purpose] = (+p.amount_usd).toFixed(2); }); });
+(async function(){
+  ME = await CS.me(); if (!ME.user) return;
+  var p = await CS.sb.from('cs_passes').select('kind,ends_at').gte('ends_at', new Date().toISOString()).order('ends_at', { ascending: false }).limit(1);
+  if (p.data && p.data[0]) $('mypass').innerHTML = '✅ ' + T('지금 청취권이 있습니다 · <b>' + p.data[0].ends_at.slice(0, 10) + '</b>까지. 더 사면 그 뒤로 이어집니다.', 'You have an active pass until <b>' + p.data[0].ends_at.slice(0, 10) + '</b>. A new pass starts after it ends.');
+})();
 </script></body></html>
