@@ -41,7 +41,7 @@ CS.top = function(on){
     var adm = document.querySelector('.nav a[href="cs_admin.html"]'); if (adm && !(m.profile && (m.profile.role === 'admin' || m.profile.role === 'reviewer'))) adm.style.display = 'none';
     if (m.user) { a.textContent = '👤 ' + (m.profile ? m.profile.nickname : T('내 정보', 'My page')); a.href = 'cs_me.html'; }
     else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
-  document.body.insertAdjacentHTML('beforeend', (['cs_talk.html','cs_pass.html'].indexOf(on) >= 0 ? '<div class="preview">' + T('미리보기 · 준비 중인 화면입니다', 'Preview · coming soon') + '</div>' : '') +
+  document.body.insertAdjacentHTML('beforeend', (['cs_talk.html'].indexOf(on) >= 0 ? '<div class="preview">' + T('미리보기 · 준비 중인 화면입니다', 'Preview · coming soon') + '</div>' : '') +
     '<footer class="foot wrap"><b>' + T('첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.', 'Cheotsojeol (WEAPP Solution) is a marketplace intermediary and is not a party to the sale. The seller (songwriter) is responsible for the songs, song information and transactions.') + '</b><br>' +
     T('위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com',
       'WEAPP Solution · CEO Mihwa Lee · Business reg. 206-08-71754 · Mail-order reg. 2022-Suwon Gwonseon-1701<br>10-501, 47 Suseong-ro, Gwonseon-gu, Suwon, Gyeonggi, Korea · weapps.kr@gmail.com') + '<br>' +

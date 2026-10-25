@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261026a"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026a"></script><script src="cs.js?v=20261026a"></script>
 <style>
 .plans{display:grid;grid-template-columns:repeat(3,1fr);max-width:1000px;gap:14px;margin-top:18px}
 .plan{cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -24,11 +24,12 @@
       <ul data-en="<li>About ₩110 a day</li><li>Full songs · lyrics</li><li>Save favorites</li><li>Unlimited deal requests</li>"><li>하루 110원꼴</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li><li>협상 요청 무제한</li></ul></div>
   </div>
   <div style="max-width:1000px;margin-top:16px"><div id="mypass" class="hint" style="margin-bottom:8px"></div><button class="btn gold" id="buy" style="width:100%;max-width:420px"></button>
-    <div id="buyer" class="card" style="display:none;max-width:420px;padding:16px;margin-top:10px"><label class="f" style="margin-top:0" data-en="Name for the card receipt">결제하시는 분 이름 (카드 영수증용)</label><input class="in" id="bname" maxlength="30"><label class="f" data-en="Mobile (optional)">휴대폰 (선택)</label><input class="in" id="btel" inputmode="tel" maxlength="20">
+    <div id="buyer" class="card" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b id="bTitle" style="font-size:16px"></b><button class="btn ghost" id="bClose" style="padding:4px 10px">✕</button></div><label class="f" style="margin-top:0" data-en="Name for the card receipt">결제하시는 분 이름 (카드 영수증용)</label><input class="in" id="bname" maxlength="30"><label class="f" data-en="Mobile (optional)">휴대폰 (선택)</label><input class="in" id="btel" inputmode="tel" maxlength="20">
       <label class="agree" style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.65;margin-top:12px;color:var(--dim)"><input type="checkbox" id="bagree"> <span data-en="I understand that once I play a song, my right to withdraw (refund) is limited because digital content has been delivered. If I play nothing within 7 days, I get a full refund.">곡을 재생하면 디지털 콘텐츠 제공이 시작되어 청약철회(환불)가 제한되고, 7일 안에 한 곡도 재생하지 않으면 전액 환불됨을 확인했습니다.</span></label>
-      <button class="btn gold" id="goCard" style="width:100%;margin-top:12px" data-en="💳 Pay by card (Korean cards)">💳 카드로 결제하기</button>
+      <div class="hint" id="mh" style="color:var(--coral)"></div><button class="btn gold" id="goCard" style="width:100%;margin-top:12px" data-en="💳 Pay by card (Korean cards)">💳 카드로 결제하기</button>
       <div id="ppWrap" style="display:none;margin-top:12px"><div class="hint" id="ppLabel" style="margin:0 0 6px"></div><div id="ppBox"></div></div></div>
     <div class="hint" id="buyh"></div></div>
+  <div id="dim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55"></div>
   <div class="card note" data-en="· Prices include VAT. In the app you pay via App Store / Google Play; on the website by card (KG Inicis) or PayPal.<br>· A pass allows personal listening for review only; no rights to the songs are transferred. Recording, distributing or publishing is not allowed.<br>· Review downloads are ₩550 per song. If you have not played any song within 7 days of purchase, the pass is fully refunded. Once you have played a song, withdrawal is limited because digital content has been delivered.<br>· Revenue share: 78% of pass revenue (after app store fees) is split monthly among songwriters by listening time.">
     · 가격은 부가세 포함입니다. 앱에서는 App Store · Google Play 결제, 사이트에서는 카드 결제로 구매합니다.<br>
     · 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>
@@ -39,18 +40,20 @@
 <script>CS.top('cs_pass.html');
 var T = CS.T, PRICE = { '7d': T('1,100원 · 7일', '₩1,100 · 7 days'), '15d': T('2,200원 · 15일', '₩2,200 · 15 days'), '30d': T('3,300원 · 30일', '₩3,300 · 30 days') }, sel = '30d', ME = null;
 function $(i){ return document.getElementById(i); }
-function hint(t, bad){ $('buyh').innerHTML = t ? '<b style="color:' + (bad ? 'var(--coral)' : 'var(--gold)') + '">' + CS.esc(t) + '</b>' : ''; }
+function hint(t, bad){ var m = $('mh'); if (m && $('buyer').style.display !== 'none') { m.textContent = t || ''; return; } $('buyh').innerHTML = t ? '<b style="color:' + (bad ? 'var(--coral)' : 'var(--gold)') + '">' + CS.esc(t) + '</b>' : ''; }
 function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); $('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
-document.querySelectorAll('.plan').forEach(function(p){ p.onclick = function(){ pick(p.dataset.k); }; });
+document.getElementById('plans').addEventListener('click', function(e){ var p = e.target.closest('.plan'); if (p) pick(p.dataset.k); });
 /* 이니시스 SDK 는 미리 받아 둡니다(클릭 뒤에 받으면 팝업 차단으로 오인) */
 var iniP = null;
 function loadIni(){ if (window.INIPayPro) return Promise.resolve(); if (iniP) return iniP; iniP = new Promise(function(ok, no){ var s = document.createElement('script'); s.src = 'https://paypro.inicis.com/std/payment/js/INIPayPro_v2.js'; s.charset = 'UTF-8'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); return iniP; }
 loadIni().catch(function(){});
 $('buy').onclick = function(){
   if (!ME || !ME.user) { location.href = 'cs_login.html?next=cs_pass.html'; return; }
-  $('buyer').style.display = ''; if (!$('bname').value) $('bname').value = ME.profile ? ME.profile.nickname : '';
-  $('buyer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('bTitle').textContent = T('청취권 ', 'Pass ') + PRICE[sel]; $('mh').textContent = '';
+  $('buyer').style.display = ''; $('dim').style.display = ''; if (!$('bname').value) $('bname').value = ME.profile ? ME.profile.nickname : '';
 };
+function closeBuy(){ $('buyer').style.display = 'none'; $('dim').style.display = 'none'; $('ppWrap').style.display = 'none'; }
+$('bClose').onclick = closeBuy; $('dim').onclick = closeBuy;
 $('goCard').onclick = async function(){
   hint('');
   var name = $('bname').value.trim(); if (!name) return hint(T('이름을 넣어 주세요.', 'Please enter a name.'), true);
