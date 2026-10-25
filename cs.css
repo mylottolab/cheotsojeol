@@ -3,13 +3,14 @@
 :root{--bg:#0E1020;--panel:#171A2E;--panel2:#1F2340;--line:rgba(255,255,255,.10);--text:#EEF0F7;--dim:#A9AFC6;--faint:#7A809A;
   --gold:#E8B65A;--gold2:#C99432;--coral:#F07A5A;--mint:#7FD8B0;--violet:#9C8CFF}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;
+html{background:var(--bg)}
+html,body{margin:0;color:var(--text);font-family:Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;
   -webkit-font-smoothing:antialiased;word-break:keep-all}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
 .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
 /* 위 띠 */
-.top{position:sticky;top:0;z-index:20;background:rgba(14,16,32,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;z-index:20;background:var(--topbg,rgba(14,16,32,.86));backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;gap:14px;height:62px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:21px;letter-spacing:-.5px}
 .logo .bar{display:inline-flex;gap:2px;align-items:flex-end;height:20px}
@@ -67,3 +68,18 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}
 table.t th,table.t td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 table.t th{font-size:12.5px;color:var(--faint);font-weight:700}
 .foot{margin:60px 0 0;padding:26px 0 70px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);line-height:1.9;text-align:center}
+
+/* ── 꾸미기(주간 · 야간 · 바탕색 · 분위기) ── */
+body{background:transparent}
+.wrap,.foot{position:relative;z-index:1}
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+html.staff body{background-image:repeating-linear-gradient(180deg,transparent 0,transparent 150px,var(--staff) 150px,var(--staff) 151px,transparent 151px,transparent 160px,var(--staff) 160px,var(--staff) 161px,transparent 161px,transparent 170px,var(--staff) 170px,var(--staff) 171px,transparent 171px,transparent 180px,var(--staff) 180px,var(--staff) 181px,transparent 181px,transparent 190px,var(--staff) 190px,var(--staff) 191px,transparent 191px,transparent 260px);background-attachment:fixed}
+html[data-mode=light] .warn{color:#A2412A!important}
+html[data-mode=light] .preview{box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.deco-btn{position:fixed;left:12px;bottom:12px;z-index:40;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:20px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.deco{position:fixed;left:12px;bottom:64px;z-index:41;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;padding:16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.35);display:none}
+.deco.on{display:block}
+.deco h4{margin:12px 0 7px;font-size:12.5px;color:var(--faint);font-weight:700}.deco h4:first-child{margin-top:0}
+.deco .opts{display:flex;flex-wrap:wrap;gap:6px}
+.deco .sw{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
+.deco .sw.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
