@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>청취권 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
 <style>
 .plans{display:grid;grid-template-columns:repeat(3,1fr);max-width:1000px;gap:14px;margin-top:18px}
 .plan{cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -13,18 +13,18 @@
 .plan .chk{display:none}.plan.best .chk{display:inline-block}
 </style></head><body>
 <main class="wrap">
-  <div class="sect" style="margin-top:34px"><h2>청취권</h2><span class="faint">2026-10-25 정한 가격</span></div>
-  <p class="muted" style="margin:0;line-height:1.8">첫소절의 곡은 무료로 공개하지 않습니다(작가가 허락한 곡만 15초 미리듣기). 청취권으로 듣는 만큼, 청취 수익의 78%가 그 곡의 작가에게 돌아갑니다.</p>
+  <div class="sect" style="margin-top:34px"><h2 data-en="Listening passes">청취권</h2><span class="faint" data-en="Prices incl. VAT">부가세 포함 가격</span></div>
+  <p class="muted" style="margin:0;line-height:1.8" data-en="Songs on Cheotsojeol are not free to stream (only a 15-second preview where the songwriter allows it). The more you listen, the more songwriters earn: 78% of pass revenue goes to the songwriters you listened to.">첫소절의 곡은 무료로 공개하지 않습니다(작가가 허락한 곡만 15초 미리듣기). 청취권으로 듣는 만큼, 청취 수익의 78%가 그 곡의 작가에게 돌아갑니다.</p>
   <div class="plans" id="plans">
-    <div class="card plan" data-k="7d"><h3>전체 자유청취 7일</h3><div class="p">1,100원 <small>/ 7일</small></div>
-      <ul><li>짧게 곡을 찾을 때</li><li>모든 곡 전체 듣기 · 가사 보기</li></ul></div>
-    <div class="card plan" data-k="15d"><h3>전체 자유청취 15일</h3><div class="p">2,200원 <small>/ 15일</small></div>
-      <ul><li>2주 동안 여유 있게</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li></ul></div>
-    <div class="card plan" data-k="30d"><span class="tag gold" style="align-self:flex-start">추천</span><h3>전체 자유청취 30일</h3><div class="p">3,300원 <small>/ 30일</small></div>
-      <ul><li>하루 110원꼴</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li><li>협상 요청 무제한</li></ul></div>
+    <div class="card plan" data-k="7d"><h3 data-en="All-access 7 days">전체 자유청취 7일</h3><div class="p" data-en="₩1,100 <small>/ 7 days</small>">1,100원 <small>/ 7일</small></div>
+      <ul data-en="<li>For a quick search</li><li>Full songs · lyrics</li>"><li>짧게 곡을 찾을 때</li><li>모든 곡 전체 듣기 · 가사 보기</li></ul></div>
+    <div class="card plan" data-k="15d"><h3 data-en="All-access 15 days">전체 자유청취 15일</h3><div class="p" data-en="₩2,200 <small>/ 15 days</small>">2,200원 <small>/ 15일</small></div>
+      <ul data-en="<li>Two relaxed weeks</li><li>Full songs · lyrics</li><li>Save favorites</li>"><li>2주 동안 여유 있게</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li></ul></div>
+    <div class="card plan" data-k="30d"><span class="tag gold" style="align-self:flex-start" data-en="Best value">추천</span><h3 data-en="All-access 30 days">전체 자유청취 30일</h3><div class="p" data-en="₩3,300 <small>/ 30 days</small>">3,300원 <small>/ 30일</small></div>
+      <ul data-en="<li>About ₩110 a day</li><li>Full songs · lyrics</li><li>Save favorites</li><li>Unlimited deal requests</li>"><li>하루 110원꼴</li><li>모든 곡 전체 듣기 · 가사 보기</li><li>관심곡 모아 두기</li><li>협상 요청 무제한</li></ul></div>
   </div>
-  <div style="max-width:1000px;margin-top:16px"><button class="btn gold" id="buy" style="width:100%;max-width:420px">선택한 청취권 구매하기</button><div class="hint" id="buyh">카드 결제는 PG사 계약 뒤 열립니다. 지금은 미리보기로 곡 화면을 보여 드립니다.</div></div>
-  <div class="card note">
+  <div style="max-width:1000px;margin-top:16px"><button class="btn gold" id="buy" style="width:100%;max-width:420px"></button><div class="hint" id="buyh"></div></div>
+  <div class="card note" data-en="· Prices include VAT. In the app you pay via App Store / Google Play; on the website by card (KG Inicis) or PayPal.<br>· A pass allows personal listening for review only; no rights to the songs are transferred. Recording, distributing or publishing is not allowed.<br>· Review downloads are ₩550 per song. If you have not played any song within 7 days of purchase, the pass is fully refunded. Once you have played a song, withdrawal is limited because digital content has been delivered.<br>· Revenue share: 78% of pass revenue (after app store fees) is split monthly among songwriters by listening time.">
     · 가격은 부가세 포함입니다. 앱에서는 App Store · Google Play 결제, 사이트에서는 카드 결제로 구매합니다.<br>
     · 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>
     · 검토용 다운로드는 곡마다 550원입니다. 결제 뒤 7일 안에 한 곡도 듣지 않았으면 청취권은 전액 환불됩니다. 이미 들은 곡이 있으면 디지털 콘텐츠의 특성상 청약철회가 제한됩니다.<br>
@@ -32,9 +32,10 @@
   </div>
 </main>
 <script>CS.top('cs_pass.html');
-var PRICE = { '7d': '1,100원 · 7일', '15d': '2,200원 · 15일', '30d': '3,300원 · 30일' }, sel = '30d';
-function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); document.getElementById('buy').textContent = '선택한 청취권 구매하기 — ' + PRICE[k]; }
+var T = CS.T, PRICE = { '7d': T('1,100원 · 7일', '₩1,100 · 7 days'), '15d': T('2,200원 · 15일', '₩2,200 · 15 days'), '30d': T('3,300원 · 30일', '₩3,300 · 30 days') }, sel = '30d';
+function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); document.getElementById('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
 document.querySelectorAll('.plan').forEach(function(p){ p.onclick = function(){ pick(p.dataset.k); }; });
-document.getElementById('buy').onclick = function(){ location.href = 'cs_song.html?id=s01&pass=1'; };
+document.getElementById('buyh').textContent = T('결제는 곧 열립니다(카드 · 앱스토어 결제 준비 중).', 'Payments open soon (card and app store payments are being set up).');
+document.getElementById('buy').onclick = function(){ document.getElementById('buyh').innerHTML = '<b style="color:var(--gold)">' + T('결제는 곧 열립니다. 조금만 기다려 주세요!', 'Payments are opening soon — thanks for waiting!') + '</b>'; };
 pick('30d');
 </script></body></html>

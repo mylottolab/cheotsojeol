@@ -27,7 +27,7 @@ var E = CS.esc, ME, TAB = 'wait', SONGS = [], REPORTS = [], CUR = null;
 var ST = { submitted:['접수','gold'], auto_checked:['자동 판별 끝','gold'], in_review:['심사 중','violet'], needs_fix:['보완 요청','coral'], rejected:['반려','coral'], listed:['공개 중','mint'], paused:['잠시 숨김','coral'], sold:['거래 완료','mint'] };
 var GROUP = { wait:['submitted','auto_checked','in_review','needs_fix'], live:['listed'], off:['paused','rejected','sold'] };
 var ROLE = { lyrics_music:'작사 · 작곡', lyrics:'작사', music:'작곡', arrange:'편곡' }, MODE = { transfer:'양도', exclusive:'독점 이용허락', nonexclusive:'비독점 이용허락' };
-var TAX = { business:'사업소득 3.3%', other_income:'기타소득 8.8%', company:'사업자(세금계산서)' }, KIND = { plagiarism:'표절', rights:'권리 침해', other:'기타' };
+var TAX = { business:'사업소득 3.3%', other_income:'기타소득 8.8%', company:'사업자(세금계산서)', nonresident:'해외 거주자' }, KIND = { plagiarism:'표절', rights:'권리 침해', other:'기타' };
 function $(i){ return document.getElementById(i); }
 function tm(s){ return s ? Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2) : '—'; }
 function d(t){ return t ? t.slice(5, 10).replace('-', '.') : ''; }

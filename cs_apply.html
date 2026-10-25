@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>곡 등록 신청 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<title data-en="Submit a song — Cheotsojeol">곡 등록 신청 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
 <style>
 .stepper{display:flex;gap:6px;margin:20px 0 6px;flex-wrap:wrap}
 .stepper span{padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;background:var(--panel);color:var(--faint);border:1px solid var(--line)}
@@ -23,102 +23,110 @@ html[data-mode=light] .warn{color:#A2412A}
 @media (max-width:640px){.row2{grid-template-columns:1fr}.share{grid-template-columns:1fr 1fr}}
 </style></head><body>
 <main class="wrap">
-  <div class="sect" style="margin-top:34px"><h2>곡 등록 신청</h2><span class="faint">작가용</span></div>
-  <p class="muted" style="margin:0;line-height:1.8"><span class="tag mint">등록심사비 무료</span> 신청한 곡은 <b style="color:var(--text)">음원 자동 판별 → 작곡가 심사위원 심사</b>를 거쳐 공개됩니다. 보통 3~5일 걸리며, 결과는 이 화면의 「내 신청곡」에서 볼 수 있습니다.</p>
+  <div class="sect" style="margin-top:34px"><h2 data-en="Submit a song">곡 등록 신청</h2><span class="faint" data-en="For songwriters">작가용</span></div>
+  <p class="muted" style="margin:0;line-height:1.8" data-en="<span class=&quot;tag mint&quot;>No review fee</span> Submitted songs go public after <b style=&quot;color:var(--text)&quot;>automatic audio matching → review by professional composers</b>. It usually takes 3–5 days; see the result under “My submissions” on this page."><span class="tag mint">등록심사비 무료</span> 신청한 곡은 <b style="color:var(--text)">음원 자동 판별 → 작곡가 심사위원 심사</b>를 거쳐 공개됩니다. 보통 3~5일 걸리며, 결과는 이 화면의 「내 신청곡」에서 볼 수 있습니다.</p>
   <div id="mine"></div>
   <div class="stepper" id="stp"></div>
-  <div class="card box" id="box"><span class="faint">불러오는 중…</span></div>
+  <div class="card box" id="box"><span class="faint" data-en="Loading…">불러오는 중…</span></div>
 </main>
 <script>
 CS.top('cs_apply.html');
+var T = CS.T, EN = CS.lang === 'en';
 var ME = null, step = 0, D = { credits: [], modes: ['transfer','exclusive'], negotiable: true };
-var STEPS = ['① 곡 파일', '② 곡 정보', '③ 만든 사람', '④ 판매 조건', '⑤ 확인 · 제출'];
-var ST = { submitted:['접수','gold'], auto_checked:['자동 판별 끝','gold'], in_review:['심사 중','violet'], needs_fix:['보완 요청','coral'], rejected:['반려','coral'], listed:['공개 중','mint'], paused:['잠시 숨김','coral'], sold:['거래 완료','mint'] };
-var ROLES = [['lyrics_music','작사 · 작곡'],['lyrics','작사'],['music','작곡'],['arrange','편곡']];
+var STEPS = [T('① 곡 파일', '① Audio'), T('② 곡 정보', '② Details'), T('③ 만든 사람', '③ Credits'), T('④ 판매 조건', '④ Terms'), T('⑤ 확인 · 제출', '⑤ Submit')];
+var ST = { submitted:[T('접수','Received'),'gold'], auto_checked:[T('자동 판별 끝','Auto-checked'),'gold'], in_review:[T('심사 중','In review'),'violet'], needs_fix:[T('보완 요청','Changes requested'),'coral'], rejected:[T('반려','Rejected'),'coral'], listed:[T('공개 중','Live'),'mint'], paused:[T('잠시 숨김','Hidden'),'coral'], sold:[T('거래 완료','Sold'),'mint'] };
+var ROLES = [['lyrics_music',T('작사 · 작곡','Lyrics · Music')],['lyrics',T('작사','Lyrics')],['music',T('작곡','Music')],['arrange',T('편곡','Arrangement')]];
 var box = document.getElementById('box'), E = CS.esc;
 function $(i){ return document.getElementById(i); }
 function err(t){ var e = $('err'); if (e) e.textContent = t || ''; return false; }
 function val(i){ var e = $(i); return e ? e.value.trim() : ''; }
 function sec(t){ var m = String(t || '').match(/^(\d+):(\d{1,2})$/); return m ? (+m[1]) * 60 + (+m[2]) : (/^\d+$/.test(t || '') ? +t : null); }
-function fileBox(id, label, f, accept){ return '<label class="drop file' + (f ? ' ok' : '') + '" id="' + id + 'L"><input type="file" id="' + id + '" accept="' + accept + '">' + (f ? '✓ ' + E(f.name) + ' <span class="faint">(바꾸려면 누르세요)</span>' : label) + '</label>'; }
-function bindFile(id, key, max, cb){ var e = $(id); if (!e) return; e.onchange = function(){ var f = e.files[0]; if (!f) return; if (f.size > max) { err('파일이 너무 큽니다(최대 ' + Math.round(max / 1048576) + 'MB).'); return; } D[key] = f; if (cb) cb(f); paint(); }; }
+function fileBox(id, label, f, accept){ return '<label class="drop file' + (f ? ' ok' : '') + '" id="' + id + 'L"><input type="file" id="' + id + '" accept="' + accept + '">' + (f ? '✓ ' + E(f.name) + ' <span class="faint">(' + T('바꾸려면 누르세요', 'tap to change') + ')</span>' : label) + '</label>'; }
+function bindFile(id, key, max, cb){ var e = $(id); if (!e) return; e.onchange = function(){ var f = e.files[0]; if (!f) return; if (f.size > max) { err(T('파일이 너무 큽니다(최대 ', 'File too large (max ') + Math.round(max / 1048576) + 'MB).'); return; } D[key] = f; if (cb) cb(f); paint(); }; }
 
 /* ── 내 신청곡 ── */
 async function loadMine(){
   var r = await CS.sb.from('cs_songs').select('id,title,status,reject_reason,created_at').eq('author_id', ME.user.id).order('created_at', { ascending: false });
   var L = r.data || [];
-  $('mine').innerHTML = L.length ? '<div class="sect" style="margin:22px 0 8px"><h2 style="font-size:17px">내 신청곡</h2><span class="faint">' + L.length + '곡</span></div><div class="card" style="padding:4px 14px;max-width:760px"><table class="t mine">' +
-    L.map(function(s){ var st = ST[s.status] || [s.status, '']; return '<tr><td><b>' + E(s.title) + '</b>' + (s.reject_reason ? '<div class="hint">사유: ' + E(s.reject_reason) + '</div>' : '') + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td class="faint">' + s.created_at.slice(0, 10) + '</td></tr>'; }).join('') + '</table></div>' : '';
+  $('mine').innerHTML = L.length ? '<div class="sect" style="margin:22px 0 8px"><h2 style="font-size:17px">' + T('내 신청곡', 'My submissions') + '</h2><span class="faint">' + T(L.length + '곡', L.length + (L.length === 1 ? ' song' : ' songs')) + '</span></div><div class="card" style="padding:4px 14px;max-width:760px"><table class="t mine">' +
+    L.map(function(s){ var st = ST[s.status] || [s.status, '']; return '<tr><td><b>' + E(s.title) + '</b>' + (s.reject_reason ? '<div class="hint">' + T('사유: ', 'Reason: ') + E(s.reject_reason) + '</div>' : '') + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td class="faint">' + s.created_at.slice(0, 10) + '</td></tr>'; }).join('') + '</table></div>' : '';
 }
 
 /* ── 작가 등록(처음 한 번) ── */
 function authorForm(){
   $('stp').innerHTML = '';
-  box.innerHTML = '<h2 style="font-size:19px">먼저 작가 등록을 해 주세요 <span class="faint" style="font-size:13px">(처음 한 번)</span></h2>' +
-    '<label class="f">작가 이름 (곡 카드에 보이는 이름)</label><input class="in" id="dn" maxlength="30" value="' + E(ME.profile.nickname) + '">' +
-    '<label class="f">작가 소개 (선택)</label><textarea class="in" id="bio" maxlength="1000" placeholder="주로 만드는 장르, 경력, 편곡 · 수정 가능 여부 등"></textarea>' +
-    '<label class="f">[필수] 한국음악저작권협회(KOMCA) · 함께하는음악저작권협회(KOSCAP) 등 저작권 신탁단체의 회원이신가요?</label><select class="in" id="tr"><option value="">선택해 주세요</option><option value="no">아니요</option><option value="KOMCA">예 — KOMCA</option><option value="KOSCAP">예 — KOSCAP</option><option value="other">예 — 그 밖의 단체</option></select>' +
-    '<div class="warn">신탁단체 회원이 만든 곡은 만드는 순간 단체에 신탁되어, 작가님이 직접 넘기거나 독점으로 허락할 수 없습니다. 회원이시면 곡을 올릴 때마다 협회의 <b>신탁범위선택제 · 곡별 신탁 제외</b>로 그 곡이 제외되었다는 <b>증빙</b>을 함께 올려 주셔야 합니다.</div>' +
-    '<label class="f">[필수] 정산 받을 때의 세금 구분 — 작가님이 직접 골라 주세요</label>' +
-    '<label class="opt"><input type="radio" name="tax" value="business"><div><b>사업소득 3.3% — 전문 작가</b><span>작곡 · 작사를 직업으로 하거나, 곡을 계속해서 판매하는 분</span></div></label>' +
-    '<label class="opt"><input type="radio" name="tax" value="other_income"><div><b>기타소득 8.8% — 어쩌다 한두 번</b><span>본업이 따로 있고, 곡을 가끔 일시적으로 판매하는 분</span></div></label>' +
-    '<label class="opt"><input type="radio" name="tax" value="company"><div><b>사업자 — 세금계산서 발행</b><span>개인사업자 · 법인 (원천징수 없이 세금계산서로 정산)</span></div></label>' +
-    '<div class="hint">고른 구분대로 세금을 떼고 지급합니다. 사정이 바뀌면 나중에 바꿀 수 있습니다. 어느 쪽인지 모르시면 세무서나 세무사에게 확인해 주세요. 실제와 다르게 골라 생기는 세금 문제는 작가님 책임입니다.</div>' +
-    '<label class="agree"><input type="checkbox" id="ag1"> [필수] <a href="cs_terms.html#author" target="_blank" style="text-decoration:underline">작가 약관</a>에 동의합니다.</label>' +
-    '<label class="agree"><input type="checkbox" id="ag2"> [필수] 심사를 통과한 곡을 첫소절이 청취권 회원에게 들려주고 검토용 파일로 제공하는 것을 허락하며, 그 대가로 청취 · 다운로드 매출의 78%를 이용료로 받는 데 동의합니다.</label>' +
-    '<div class="nav2"><span></span><button class="btn gold" id="go">작가 등록하기</button></div><div class="err" id="err"></div>';
+  var TAXO = [['business', T('사업소득 3.3% — 전문 작가', 'Korean resident · business income 3.3%'), T('작곡 · 작사를 직업으로 하거나, 곡을 계속해서 판매하는 분', 'Professional songwriters living in Korea who sell songs regularly')],
+              ['other_income', T('기타소득 8.8% — 어쩌다 한두 번', 'Korean resident · other income 8.8%'), T('본업이 따로 있고, 곡을 가끔 일시적으로 판매하는 분', 'Korean residents with another main job who sell songs only occasionally')],
+              ['company', T('사업자 — 세금계산서 발행', 'Registered business (Korea) — tax invoice'), T('개인사업자 · 법인 (원천징수 없이 세금계산서로 정산)', 'Sole proprietors or companies in Korea (settled by tax invoice, no withholding)')],
+              ['nonresident', T('해외 거주자 — 외국 작가', 'Non-resident — songwriter living outside Korea'), T('한국에 살지 않는 작가 (한국 세법에 따라 원천징수 · 조세조약 세율은 거주자증명서 제출 시 적용)', 'Korean withholding tax applies under Korean tax law; a reduced treaty rate applies if you submit a certificate of tax residence')]];
+  if (EN) TAXO.unshift(TAXO.pop());
+  box.innerHTML = '<h2 style="font-size:19px">' + T('먼저 작가 등록을 해 주세요', 'First, create your songwriter profile') + ' <span class="faint" style="font-size:13px">(' + T('처음 한 번', 'one time') + ')</span></h2>' +
+    '<label class="f">' + T('작가 이름 (곡 카드에 보이는 이름)', 'Artist name (shown on song cards)') + '</label><input class="in" id="dn" maxlength="30" value="' + E(ME.profile.nickname) + '">' +
+    '<label class="f">' + T('작가 소개 (선택)', 'About you (optional)') + '</label><textarea class="in" id="bio" maxlength="1000" placeholder="' + T('주로 만드는 장르, 경력, 편곡 · 수정 가능 여부 등', 'Main genres, credits, whether you can arrange or revise, etc.') + '"></textarea>' +
+    '<label class="f">' + T('[필수] 한국음악저작권협회(KOMCA) · 함께하는음악저작권협회(KOSCAP) 등 저작권 신탁단체의 회원이신가요?', '[Required] Are you a member of a collecting society that manages your copyrights (e.g. KOMCA, KOSCAP, ASCAP, BMI, PRS, JASRAC)?') + '</label><select class="in" id="tr"><option value="">' + T('선택해 주세요', 'Please choose') + '</option><option value="no">' + T('아니요', 'No') + '</option><option value="KOMCA">' + T('예 — KOMCA', 'Yes — KOMCA') + '</option><option value="KOSCAP">' + T('예 — KOSCAP', 'Yes — KOSCAP') + '</option><option value="other">' + T('예 — 그 밖의 단체', 'Yes — another society') + '</option></select>' +
+    '<div class="warn">' + T('신탁단체 회원이 만든 곡은 만드는 순간 단체에 신탁되어, 작가님이 직접 넘기거나 독점으로 허락할 수 없습니다. 회원이시면 곡을 올릴 때마다 협회의 <b>신탁범위선택제 · 곡별 신탁 제외</b>로 그 곡이 제외되었다는 <b>증빙</b>을 함께 올려 주셔야 합니다.',
+      'If you belong to a collecting society, your new songs may be assigned to it automatically, and you cannot sell or exclusively license them yourself. Members must upload <b>proof that the song is excluded</b> from the society’s mandate (e.g. a per-work exclusion) with every submission.') + '</div>' +
+    '<label class="f">' + T('[필수] 정산 받을 때의 세금 구분 — 작가님이 직접 골라 주세요', '[Required] Your tax status for payouts — please choose') + '</label>' +
+    TAXO.map(function(x){ return '<label class="opt"><input type="radio" name="tax" value="' + x[0] + '"><div><b>' + x[1] + '</b><span>' + x[2] + '</span></div></label>'; }).join('') +
+    '<div class="hint">' + T('고른 구분대로 세금을 떼고 지급합니다. 사정이 바뀌면 나중에 바꿀 수 있습니다. 어느 쪽인지 모르시면 세무서나 세무사에게 확인해 주세요. 실제와 다르게 골라 생기는 세금 문제는 작가님 책임입니다.', 'We withhold tax according to your choice; you can change it later. If unsure, ask a tax adviser. You are responsible for any tax issue caused by choosing a status that does not match your situation.') + '</div>' +
+    '<label class="agree"><input type="checkbox" id="ag1"> ' + T('[필수] <a href="cs_terms.html#author" target="_blank" style="text-decoration:underline">작가 약관</a>에 동의합니다.', '[Required] I agree to the <a href="cs_terms.html#author" target="_blank" style="text-decoration:underline">Songwriter Terms</a>.') + '</label>' +
+    '<label class="agree"><input type="checkbox" id="ag2"> ' + T('[필수] 심사를 통과한 곡을 첫소절이 청취권 회원에게 들려주고 검토용 파일로 제공하는 것을 허락하며, 그 대가로 청취 · 다운로드 매출의 78%를 이용료로 받는 데 동의합니다.', '[Required] I allow Cheotsojeol to stream my approved songs to pass holders and provide review copies, and I agree to receive 78% of listening and download revenue as a license fee.') + '</label>' +
+    '<div class="nav2"><span></span><button class="btn gold" id="go">' + T('작가 등록하기', 'Create profile') + '</button></div><div class="err" id="err"></div>';
   $('go').onclick = async function(){
     var tr = val('tr'), tax = (document.querySelector('input[name=tax]:checked') || {}).value;
-    if (!val('dn')) return err('작가 이름을 넣어 주세요.');
-    if (!tr) return err('신탁단체 회원인지 골라 주세요.');
-    if (!tax) return err('세금 구분을 골라 주세요.');
-    if (!$('ag1').checked || !$('ag2').checked) return err('필수 항목에 모두 동의해 주세요.');
+    if (!val('dn')) return err(T('작가 이름을 넣어 주세요.', 'Please enter your artist name.'));
+    if (!tr) return err(T('신탁단체 회원인지 골라 주세요.', 'Please answer the collecting-society question.'));
+    if (!tax) return err(T('세금 구분을 골라 주세요.', 'Please choose your tax status.'));
+    if (!$('ag1').checked || !$('ag2').checked) return err(T('필수 항목에 모두 동의해 주세요.', 'Please accept all required items.'));
     this.disabled = true;
     var r = await CS.sb.from('cs_authors').insert({ user_id: ME.user.id, display_name: val('dn'), bio: val('bio') || null,
       trust_member: tr !== 'no', trust_society: tr === 'no' ? null : tr, tax_type: tax, tax_declared_at: new Date().toISOString() });
     this.disabled = false;
-    if (r.error) return err('저장하지 못했습니다: ' + r.error.message);
+    if (r.error) return err(T('저장하지 못했습니다: ', 'Could not save: ') + r.error.message);
     ME = await CS.me(true); paint();
   };
 }
 
 /* ── 곡 신청 단계 ── */
 function page(){
-  if (step === 0) return '<label class="f">음원 파일 (필수)</label>' + fileBox('au', '🎵 눌러서 음원 파일을 고르세요<br><span class="faint">MP3 · WAV · M4A · 최대 50MB · 완성곡 또는 데모(가이드 보컬 포함 가능)</span>', D.audio, 'audio/*') +
-    (D.length_sec ? '<div class="hint">길이 ' + Math.floor(D.length_sec / 60) + ':' + ('0' + D.length_sec % 60).slice(-2) + '</div>' : '') +
-    '<label class="f">가사</label><textarea class="in" id="ly" maxlength="8000" placeholder="가사 전체를 붙여 넣어 주세요 (연주곡이면 비워 두세요)">' + E(D.lyrics) + '</textarea>' +
-    '<label class="f">창작 증빙 (선택)</label>' + fileBox('ev', '작업 파일(프로젝트 · 악보 · 녹음 기록) 사진이나 PDF — 표절 분쟁 때 작가님을 지켜 줍니다', D.evidence, 'image/*,application/pdf');
-  if (step === 1) return '<div class="row2"><div><label class="f">곡 제목 (필수)</label><input class="in" id="ti" maxlength="80" placeholder="예) 새벽 세 시의 고백" value="' + E(D.title) + '"></div><div><label class="f">장르</label><select class="in" id="ge">' + CS.GENRES.slice(1).map(function(g){ return '<option' + (g === D.genre ? ' selected' : '') + '>' + g + '</option>'; }).join('') + '</select></div></div>' +
-    '<div class="row2"><div><label class="f">분위기</label><input class="in" id="mo" placeholder="예) 잔잔한, 몽환적" value="' + E(D.mood) + '"></div><div class="row2" style="gap:8px"><div><label class="f">빠르기(BPM)</label><input class="in" id="bp" inputmode="numeric" placeholder="72" value="' + E(D.bpm) + '"></div><div><label class="f">조</label><input class="in" id="ky" maxlength="12" placeholder="E♭" value="' + E(D.music_key) + '"></div></div></div>' +
-    '<label class="f">곡 소개</label><textarea class="in" id="in" maxlength="2000" placeholder="어떤 가수 · 어떤 쓰임에 어울리는지, 편곡 · 수정이 가능한지 등">' + E(D.intro) + '</textarea>';
-  if (step === 2) return '<label class="f">참여한 사람과 지분</label><div class="hint" style="margin-top:0">공동 창작곡은 참여자 전원의 동의가 필요합니다. 지분 합계는 100%여야 합니다.</div>' +
-    D.credits.map(function(c, i){ return '<div class="share"><input class="in cn" data-i="' + i + '" value="' + E(c.name) + '" placeholder="이름"><select class="in cr" data-i="' + i + '">' + ROLES.map(function(r){ return '<option value="' + r[0] + '"' + (r[0] === c.role ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('') + '</select><input class="in cp" data-i="' + i + '" inputmode="decimal" value="' + c.share_pct + '" placeholder="%">' + (i ? '<button class="x" data-i="' + i + '" title="빼기">×</button>' : '<span></span>') + '</div>'; }).join('') +
-    '<button class="btn ghost" id="add" style="margin-top:8px;padding:9px 14px;font-size:13.5px">＋ 참여자 추가</button>' +
-    (ME.author.trust_member ? '<div class="warn">작가님은 신탁단체 회원으로 등록되어 있습니다. 이 곡이 <b>신탁에서 제외되었다는 증빙</b>을 꼭 올려 주세요. 증빙이 없으면 신청할 수 없습니다.</div><label class="f">신탁 제외 증빙 (필수)</label>' + fileBox('tp', '협회에서 받은 신탁 제외 확인서 · 화면 캡처 (사진 또는 PDF)', D.trust, 'image/*,application/pdf') : '');
-  if (step === 3) return '<label class="f">판매 방식 (여러 개 고를 수 있어요)</label>' +
-    [['transfer','양도','곡의 저작재산권을 구매자에게 넘깁니다. 성명표시권 등 저작인격권은 작가님께 남습니다.'],['exclusive','독점 이용허락','권리는 작가님께 두고, 정한 기간 · 범위 동안 한 구매자만 쓰게 합니다.'],['nonexclusive','비독점 이용허락','여러 구매자가 함께 쓸 수 있게 합니다. 광고 · 영상 배경음악에 많이 씁니다.']].map(function(x){ return '<label class="opt"><input type="checkbox" class="md" value="' + x[0] + '"' + (D.modes.indexOf(x[0]) >= 0 ? ' checked' : '') + '><div><b>' + x[1] + '</b><span>' + x[2] + '</span></div></label>'; }).join('') +
-    '<div class="row2"><div><label class="f">희망 판매가 (원, 1만 원 이상)</label><input class="in" id="pr" inputmode="numeric" placeholder="3,000,000" value="' + (D.price_krw ? D.price_krw.toLocaleString() : '') + '"></div><div><label class="f">가격 협상</label><select class="in" id="ng"><option value="1">협상 받기</option><option value="0"' + (D.negotiable ? '' : ' selected') + '>정가로만 판매</option></select></div></div>' +
-    '<label class="f">15초 무료 미리듣기</label><label class="opt"><input type="checkbox" id="pv"' + (D.preview_allowed ? ' checked' : '') + '><div><b>미리듣기 허용</b><span>로그인한 회원에게 이 곡의 15초만 낮은 음질(모노)로 들려줍니다. 미리듣기 파일은 제출할 때 자동으로 만들어집니다. 허용하지 않으면 청취권이 있는 회원만 듣습니다.</span></div></label>' +
-    '<div class="row2"><div><label class="f">미리듣기 시작 지점</label><input class="in" id="ps" placeholder="예) 1:05 (후렴 시작)" value="' + E(D.ps || '') + '"></div><div></div></div>' +
-    '<div class="hint">거래가 이뤄지면 수수료 20%와 그 부가세(거래가의 2%)를 뺀 금액이 정산됩니다. 예) 300만 원 → 234만 원(원천징수는 고르신 세금 구분대로).</div>';
-  return '<div style="line-height:1.9;font-size:14.5px"><b>제출 전에 확인해 주세요</b><div class="hint" style="margin-top:2px">「' + E(D.title) + '」 · ' + E(D.genre) + ' · 희망가 ' + CS.won(D.price_krw || 0) + '</div></div>' +
-    ['이 곡은 제가 직접 만들었으며(공동 창작이면 참여자 전원이 동의했으며), 다른 곡을 베끼지 않았습니다.', '이 곡을 다른 곳에 독점으로 넘기거나 계약하지 않았습니다.', '표절 · 권리 침해가 확인되거나 신고가 들어오면 곡이 바로 숨겨지고, 그로 인한 책임은 제게 있음을 압니다.', '작가 약관과 수수료(20% + 부가세)에 동의합니다.'].map(function(t, i){ return '<label class="agree"><input type="checkbox" class="ok"> ' + t + '</label>'; }).join('') +
-    '<div class="hint" style="margin-top:14px">제출하면 ① 음원 자동 판별(발표곡과 같은지 확인) → ② 작곡가 심사위원의 음악성 · 표절 심사 순서로 진행됩니다.</div>';
+  if (step === 0) return '<label class="f">' + T('음원 파일 (필수)', 'Audio file (required)') + '</label>' + fileBox('au', T('🎵 눌러서 음원 파일을 고르세요<br><span class="faint">MP3 · WAV · M4A · 최대 50MB · 완성곡 또는 데모(가이드 보컬 포함 가능)</span>', '🎵 Tap to choose your audio file<br><span class="faint">MP3 · WAV · M4A · up to 50MB · finished song or demo (guide vocal OK)</span>'), D.audio, 'audio/*') +
+    (D.length_sec ? '<div class="hint">' + T('길이 ', 'Length ') + Math.floor(D.length_sec / 60) + ':' + ('0' + D.length_sec % 60).slice(-2) + '</div>' : '') +
+    '<label class="f">' + T('가사', 'Lyrics') + '</label><textarea class="in" id="ly" maxlength="8000" placeholder="' + T('가사 전체를 붙여 넣어 주세요 (연주곡이면 비워 두세요)', 'Paste the full lyrics (leave empty for instrumentals)') + '">' + E(D.lyrics) + '</textarea>' +
+    '<label class="f">' + T('창작 증빙 (선택)', 'Proof of creation (optional)') + '</label>' + fileBox('ev', T('작업 파일(프로젝트 · 악보 · 녹음 기록) 사진이나 PDF — 표절 분쟁 때 작가님을 지켜 줍니다', 'A photo or PDF of your work files (project, score, session notes) — protects you in a plagiarism dispute'), D.evidence, 'image/*,application/pdf');
+  if (step === 1) return '<div class="row2"><div><label class="f">' + T('곡 제목 (필수)', 'Song title (required)') + '</label><input class="in" id="ti" maxlength="80" placeholder="' + T('예) 새벽 세 시의 고백', 'e.g. Confession at 3 AM') + '" value="' + E(D.title) + '"></div><div><label class="f">' + T('장르', 'Genre') + '</label><select class="in" id="ge">' + CS.GENRES.slice(1).map(function(g){ return '<option value="' + g + '"' + (g === D.genre ? ' selected' : '') + '>' + CS.G(g) + '</option>'; }).join('') + '</select></div></div>' +
+    '<div class="row2"><div><label class="f">' + T('분위기', 'Mood') + '</label><input class="in" id="mo" placeholder="' + T('예) 잔잔한, 몽환적', 'e.g. calm, dreamy') + '" value="' + E(D.mood) + '"></div><div class="row2" style="gap:8px"><div><label class="f">' + T('빠르기(BPM)', 'Tempo (BPM)') + '</label><input class="in" id="bp" inputmode="numeric" placeholder="72" value="' + E(D.bpm) + '"></div><div><label class="f">' + T('조', 'Key') + '</label><input class="in" id="ky" maxlength="12" placeholder="E♭" value="' + E(D.music_key) + '"></div></div></div>' +
+    '<label class="f">' + T('곡 소개', 'About the song') + '</label><textarea class="in" id="in" maxlength="2000" placeholder="' + T('어떤 가수 · 어떤 쓰임에 어울리는지, 편곡 · 수정이 가능한지 등', 'Which artist or use it suits, whether you can arrange or revise it, etc.') + '">' + E(D.intro) + '</textarea>';
+  if (step === 2) return '<label class="f">' + T('참여한 사람과 지분', 'Contributors and shares') + '</label><div class="hint" style="margin-top:0">' + T('공동 창작곡은 참여자 전원의 동의가 필요합니다. 지분 합계는 100%여야 합니다.', 'Co-written songs need every contributor’s consent. Shares must add up to 100%.') + '</div>' +
+    D.credits.map(function(c, i){ return '<div class="share"><input class="in cn" data-i="' + i + '" value="' + E(c.name) + '" placeholder="' + T('이름', 'Name') + '"><select class="in cr" data-i="' + i + '">' + ROLES.map(function(r){ return '<option value="' + r[0] + '"' + (r[0] === c.role ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('') + '</select><input class="in cp" data-i="' + i + '" inputmode="decimal" value="' + c.share_pct + '" placeholder="%">' + (i ? '<button class="x" data-i="' + i + '" title="' + T('빼기', 'Remove') + '">×</button>' : '<span></span>') + '</div>'; }).join('') +
+    '<button class="btn ghost" id="add" style="margin-top:8px;padding:9px 14px;font-size:13.5px">' + T('＋ 참여자 추가', '＋ Add contributor') + '</button>' +
+    (ME.author.trust_member ? '<div class="warn">' + T('작가님은 신탁단체 회원으로 등록되어 있습니다. 이 곡이 <b>신탁에서 제외되었다는 증빙</b>을 꼭 올려 주세요. 증빙이 없으면 신청할 수 없습니다.', 'You are registered as a collecting-society member. Please upload <b>proof that this song is excluded from the society’s mandate</b>. You cannot submit without it.') + '</div><label class="f">' + T('신탁 제외 증빙 (필수)', 'Proof of exclusion (required)') + '</label>' + fileBox('tp', T('협회에서 받은 신탁 제외 확인서 · 화면 캡처 (사진 또는 PDF)', 'Exclusion confirmation from your society or a screenshot (photo or PDF)'), D.trust, 'image/*,application/pdf') : '');
+  if (step === 3) return '<label class="f">' + T('판매 방식 (여러 개 고를 수 있어요)', 'Deal types (choose one or more)') + '</label>' +
+    [['transfer',T('양도','Buyout (assignment)'),T('곡의 저작재산권을 구매자에게 넘깁니다. 성명표시권 등 저작인격권은 작가님께 남습니다.','Transfer the economic rights to the buyer. Moral rights such as attribution stay with you.')],['exclusive',T('독점 이용허락','Exclusive license'),T('권리는 작가님께 두고, 정한 기간 · 범위 동안 한 구매자만 쓰게 합니다.','You keep the rights; only one buyer may use the song for the agreed term and territory.')],['nonexclusive',T('비독점 이용허락','Non-exclusive license'),T('여러 구매자가 함께 쓸 수 있게 합니다. 광고 · 영상 배경음악에 많이 씁니다.','Several buyers may use the song. Common for ads and video background music.')]].map(function(x){ return '<label class="opt"><input type="checkbox" class="md" value="' + x[0] + '"' + (D.modes.indexOf(x[0]) >= 0 ? ' checked' : '') + '><div><b>' + x[1] + '</b><span>' + x[2] + '</span></div></label>'; }).join('') +
+    '<div class="row2"><div><label class="f">' + T('희망 판매가 (원, 1만 원 이상)', 'Asking price (KRW, ₩10,000 or more)') + '</label><input class="in" id="pr" inputmode="numeric" placeholder="3,000,000" value="' + (D.price_krw ? D.price_krw.toLocaleString() : '') + '"></div><div><label class="f">' + T('가격 협상', 'Negotiation') + '</label><select class="in" id="ng"><option value="1">' + T('협상 받기', 'Open to offers') + '</option><option value="0"' + (D.negotiable ? '' : ' selected') + '>' + T('정가로만 판매', 'Fixed price only') + '</option></select></div></div>' +
+    '<label class="f">' + T('15초 무료 미리듣기', 'Free 15-second preview') + '</label><label class="opt"><input type="checkbox" id="pv"' + (D.preview_allowed ? ' checked' : '') + '><div><b>' + T('미리듣기 허용', 'Allow preview') + '</b><span>' + T('로그인한 회원에게 이 곡의 15초만 낮은 음질(모노)로 들려줍니다. 미리듣기 파일은 제출할 때 자동으로 만들어집니다. 허용하지 않으면 청취권이 있는 회원만 듣습니다.', 'Logged-in members can hear 15 seconds in low quality (mono). The preview file is created automatically when you submit. If off, only pass holders can listen.') + '</span></div></label>' +
+    '<div class="row2"><div><label class="f">' + T('미리듣기 시작 지점', 'Preview starts at') + '</label><input class="in" id="ps" placeholder="' + T('예) 1:05 (후렴 시작)', 'e.g. 1:05 (chorus)') + '" value="' + E(D.ps || '') + '"></div><div></div></div>' +
+    '<div class="hint">' + T('거래가 이뤄지면 수수료 20%와 그 부가세(거래가의 2%)를 뺀 금액이 정산됩니다. 예) 300만 원 → 234만 원(원천징수는 고르신 세금 구분대로).', 'When a deal closes you receive the price minus our 20% fee and its VAT (2% of the price). e.g. ₩3,000,000 → ₩2,340,000 (before withholding tax per your tax status).') + '</div>';
+  return '<div style="line-height:1.9;font-size:14.5px"><b>' + T('제출 전에 확인해 주세요', 'Please confirm before submitting') + '</b><div class="hint" style="margin-top:2px">「' + E(D.title) + '」 · ' + E(CS.G(D.genre)) + ' · ' + T('희망가 ', 'Asking ') + CS.won(D.price_krw || 0) + '</div></div>' +
+    [T('이 곡은 제가 직접 만들었으며(공동 창작이면 참여자 전원이 동의했으며), 다른 곡을 베끼지 않았습니다.', 'I wrote this song myself (all co-writers agreed, if any) and it does not copy any other song.'),
+     T('이 곡을 다른 곳에 독점으로 넘기거나 계약하지 않았습니다.', 'I have not sold or exclusively licensed this song elsewhere.'),
+     T('표절 · 권리 침해가 확인되거나 신고가 들어오면 곡이 바로 숨겨지고, 그로 인한 책임은 제게 있음을 압니다.', 'I understand the song is hidden immediately if plagiarism or infringement is reported or confirmed, and that I am responsible for it.'),
+     T('작가 약관과 수수료(20% + 부가세)에 동의합니다.', 'I agree to the Songwriter Terms and the fee (20% + VAT).')].map(function(t){ return '<label class="agree"><input type="checkbox" class="ok"> ' + t + '</label>'; }).join('') +
+    '<div class="hint" style="margin-top:14px">' + T('제출하면 ① 음원 자동 판별(발표곡과 같은지 확인) → ② 작곡가 심사위원의 음악성 · 표절 심사 순서로 진행됩니다.', 'After you submit: ① automatic audio matching (checks against released songs) → ② review of musicality and originality by professional composers.') + '</div>';
 }
 function collect(){
-  if (step === 0) { D.lyrics = val('ly'); if (!D.audio) return err('음원 파일을 골라 주세요.'); }
+  if (step === 0) { D.lyrics = val('ly'); if (!D.audio) return err(T('음원 파일을 골라 주세요.', 'Please choose an audio file.')); }
   if (step === 1) { D.title = val('ti'); D.genre = val('ge'); D.mood = val('mo'); D.bpm = val('bp').replace(/\D/g, ''); D.music_key = val('ky'); D.intro = val('in');
-    if (!D.title) return err('곡 제목을 넣어 주세요.'); if (D.bpm && (D.bpm < 30 || D.bpm > 300)) return err('빠르기는 30~300 사이로 넣어 주세요.'); }
+    if (!D.title) return err(T('곡 제목을 넣어 주세요.', 'Please enter a title.')); if (D.bpm && (D.bpm < 30 || D.bpm > 300)) return err(T('빠르기는 30~300 사이로 넣어 주세요.', 'Tempo must be between 30 and 300.')); }
   if (step === 2) { readCredits(); var sum = 0;
-    for (var i = 0; i < D.credits.length; i++) { var c = D.credits[i]; if (!c.name) return err('참여자 이름을 모두 넣어 주세요.'); if (!(c.share_pct > 0)) return err('지분을 넣어 주세요.'); sum += c.share_pct; }
-    if (Math.abs(sum - 100) > 0.001) return err('지분 합계가 100%가 되어야 합니다(지금 ' + sum + '%).');
-    if (ME.author.trust_member && !D.trust) return err('신탁 제외 증빙을 올려 주세요.'); }
+    for (var i = 0; i < D.credits.length; i++) { var c = D.credits[i]; if (!c.name) return err(T('참여자 이름을 모두 넣어 주세요.', 'Please enter every contributor’s name.')); if (!(c.share_pct > 0)) return err(T('지분을 넣어 주세요.', 'Please enter the shares.')); sum += c.share_pct; }
+    if (Math.abs(sum - 100) > 0.001) return err(T('지분 합계가 100%가 되어야 합니다(지금 ' + sum + '%).', 'Shares must add up to 100% (now ' + sum + '%).'));
+    if (ME.author.trust_member && !D.trust) return err(T('신탁 제외 증빙을 올려 주세요.', 'Please upload proof of exclusion.')); }
   if (step === 3) { D.modes = [].slice.call(document.querySelectorAll('.md:checked')).map(function(x){ return x.value; });
     D.price_krw = +val('pr').replace(/\D/g, ''); D.negotiable = val('ng') === '1'; D.preview_allowed = $('pv').checked; D.ps = val('ps');
-    if (!D.modes.length) return err('판매 방식을 하나 이상 골라 주세요.');
-    if (!(D.price_krw >= 10000)) return err('희망 판매가는 1만 원 이상으로 넣어 주세요.');
-    if (D.preview_allowed && D.ps && sec(D.ps) == null) return err('시작 지점은 1:05처럼 넣어 주세요.');
-    if (D.preview_allowed && D.length_sec && sec(D.ps) + 15 > D.length_sec) return err('시작 지점이 곡 끝에 너무 가깝습니다.'); }
+    if (!D.modes.length) return err(T('판매 방식을 하나 이상 골라 주세요.', 'Choose at least one deal type.'));
+    if (!(D.price_krw >= 10000)) return err(T('희망 판매가는 1만 원 이상으로 넣어 주세요.', 'Asking price must be at least ₩10,000.'));
+    if (D.preview_allowed && D.ps && sec(D.ps) == null) return err(T('시작 지점은 1:05처럼 넣어 주세요.', 'Enter the start point like 1:05.'));
+    if (D.preview_allowed && D.length_sec && sec(D.ps) + 15 > D.length_sec) return err(T('시작 지점이 곡 끝에 너무 가깝습니다.', 'The start point is too close to the end of the song.')); }
   return true;
 }
 function readCredits(){ document.querySelectorAll('.cn').forEach(function(e){ var c = D.credits[e.dataset.i]; c.name = e.value.trim(); c.role = document.querySelector('.cr[data-i="' + e.dataset.i + '"]').value; c.share_pct = parseFloat(String(document.querySelector('.cp[data-i="' + e.dataset.i + '"]').value).replace(/[^\d.]/g, '')) || 0; }); }
@@ -142,38 +150,39 @@ async function makePreview(file, start){
 }
 function ext(f){ var m = /\.([a-z0-9]{2,4})$/i.exec(f.name); return m ? m[1].toLowerCase() : 'bin'; }
 async function submit(btn){
-  if ([].slice.call(document.querySelectorAll('.ok')).some(function(x){ return !x.checked; })) return err('네 가지 모두 확인해 주세요.');
-  btn.disabled = true; btn.textContent = '파일 올리는 중…';
+  var SUB = T('심사 신청하기', 'Submit for review');
+  if ([].slice.call(document.querySelectorAll('.ok')).some(function(x){ return !x.checked; })) return err(T('네 가지 모두 확인해 주세요.', 'Please confirm all four items.'));
+  btn.disabled = true; btn.textContent = T('파일 올리는 중…', 'Uploading…');
   var id = crypto.randomUUID(), base = ME.user.id + '/' + id, up = CS.sb.storage.from('cs-audio');
   var a = await up.upload(base + '.' + ext(D.audio), D.audio, { contentType: D.audio.type || 'audio/mpeg' });
-  if (a.error) { btn.disabled = false; btn.textContent = '심사 신청하기'; return err('음원을 올리지 못했습니다: ' + a.error.message); }
+  if (a.error) { btn.disabled = false; btn.textContent = SUB; return err(T('음원을 올리지 못했습니다: ', 'Could not upload the audio: ') + a.error.message); }
   var tp = null;
-  if (D.trust) { var t = await up.upload(base + '_trust.' + ext(D.trust), D.trust, { contentType: D.trust.type }); if (t.error) { btn.disabled = false; btn.textContent = '심사 신청하기'; return err('증빙을 올리지 못했습니다: ' + t.error.message); } tp = t.data.path; }
+  if (D.trust) { var t = await up.upload(base + '_trust.' + ext(D.trust), D.trust, { contentType: D.trust.type }); if (t.error) { btn.disabled = false; btn.textContent = SUB; return err(T('증빙을 올리지 못했습니다: ', 'Could not upload the proof: ') + t.error.message); } tp = t.data.path; }
   if (D.evidence) await up.upload(base + '_evidence.' + ext(D.evidence), D.evidence, { contentType: D.evidence.type });
   var pvPath = null, pvNote = '';
   if (D.preview_allowed) {
-    btn.textContent = '15초 미리듣기 만드는 중…';
+    btn.textContent = T('15초 미리듣기 만드는 중…', 'Creating 15s preview…');
     try { var pv = await makePreview(D.audio, sec(D.ps) || 0);
       var pu = await CS.sb.storage.from('cs-preview').upload(base + '.mp3', pv, { contentType: 'audio/mpeg' });
       if (pu.error) throw new Error(pu.error.message); pvPath = pu.data.path;
-    } catch (e) { pvNote = ' (이 파일 형식으로는 미리듣기를 만들지 못해, 미리듣기 없이 신청했습니다. MP3로 다시 올리시면 미리듣기를 켤 수 있습니다.)'; }
+    } catch (e) { pvNote = T(' (이 파일 형식으로는 미리듣기를 만들지 못해, 미리듣기 없이 신청했습니다. MP3로 다시 올리시면 미리듣기를 켤 수 있습니다.)', ' (We could not create a preview from this file format, so it was submitted without one. Upload an MP3 to enable the preview.)'); }
   }
-  btn.textContent = '신청하는 중…';
+  btn.textContent = T('신청하는 중…', 'Submitting…');
   var r = await CS.sb.rpc('cs_song_submit', { p: { id: id, audio_path: a.data.path, trust_proof_path: tp, title: D.title, genre: D.genre, mood: D.mood || null,
     bpm: D.bpm || '', music_key: D.music_key || null, length_sec: D.length_sec || '', lyrics: D.lyrics || null, intro: D.intro || null, modes: D.modes,
     price_krw: D.price_krw, negotiable: D.negotiable, preview_allowed: D.preview_allowed && !!pvPath, preview_path: pvPath, preview_start_sec: D.preview_allowed ? (sec(D.ps) || 0) : 0, credits: D.credits } });
   var res = r.data || {};
-  if (r.error || !res.ok) { btn.disabled = false; btn.textContent = '심사 신청하기';
-    var M = { share_not_100: '지분 합계가 100%가 아닙니다.', trust_proof_needed: '신탁 제외 증빙이 필요합니다.', not_author: '작가 등록이 필요합니다.', bad_file: '음원 파일 경로가 올바르지 않습니다.', login: '다시 로그인해 주세요.' };
-    return err(M[res.error] || ('신청하지 못했습니다: ' + (r.error ? r.error.message : res.error))); }
+  if (r.error || !res.ok) { btn.disabled = false; btn.textContent = SUB;
+    var M = { share_not_100: T('지분 합계가 100%가 아닙니다.', 'Shares do not add up to 100%.'), trust_proof_needed: T('신탁 제외 증빙이 필요합니다.', 'Proof of exclusion is required.'), not_author: T('작가 등록이 필요합니다.', 'Please create your songwriter profile first.'), bad_file: T('음원 파일 경로가 올바르지 않습니다.', 'Invalid audio file path.'), login: T('다시 로그인해 주세요.', 'Please log in again.') };
+    return err(M[res.error] || (T('신청하지 못했습니다: ', 'Could not submit: ') + (r.error ? r.error.message : res.error))); }
   $('stp').innerHTML = '';
-  box.innerHTML = '<div style="text-align:center;padding:30px 10px;line-height:1.9"><div style="font-size:40px">🎼</div><b style="font-size:19px">신청이 접수되었습니다</b><br><span class="muted">「' + E(D.title) + '」 — 음원 자동 판별 뒤 작곡가 심사위원이 심사합니다. 결과는 3~5일 안에 「내 신청곡」에서 볼 수 있습니다.' + E(pvNote) + '</span><br><button class="btn" style="margin-top:16px" onclick="location.reload()">다른 곡 신청하기</button></div>';
+  box.innerHTML = '<div style="text-align:center;padding:30px 10px;line-height:1.9"><div style="font-size:40px">🎼</div><b style="font-size:19px">' + T('신청이 접수되었습니다', 'Submission received') + '</b><br><span class="muted">「' + E(D.title) + '」 — ' + T('음원 자동 판별 뒤 작곡가 심사위원이 심사합니다. 결과는 3~5일 안에 「내 신청곡」에서 볼 수 있습니다.', 'After automatic matching, professional composers will review it. See the result under “My submissions” within 3–5 days.') + E(pvNote) + '</span><br><button class="btn" style="margin-top:16px" onclick="location.reload()">' + T('다른 곡 신청하기', 'Submit another song') + '</button></div>';
   loadMine();
 }
 function paint(){
   if (!ME.author) return authorForm();
   $('stp').innerHTML = STEPS.map(function(x, i){ return '<span class="' + (i === step ? 'on' : i < step ? 'done' : '') + '">' + (i < step ? '✓ ' : '') + x + '</span>'; }).join('');
-  box.innerHTML = page() + '<div class="nav2"><button class="btn ghost" id="pv0"' + (step ? '' : ' style="visibility:hidden"') + '>‹ 이전</button><button class="btn gold" id="nx">' + (step === STEPS.length - 1 ? '심사 신청하기' : '다음 ›') + '</button></div><div class="err" id="err"></div>';
+  box.innerHTML = page() + '<div class="nav2"><button class="btn ghost" id="pv0"' + (step ? '' : ' style="visibility:hidden"') + '>' + T('‹ 이전', '‹ Back') + '</button><button class="btn gold" id="nx">' + (step === STEPS.length - 1 ? T('심사 신청하기', 'Submit for review') : T('다음 ›', 'Next ›')) + '</button></div><div class="err" id="err"></div>';
   bindFile('au', 'audio', 52428800, function(f){ D.length_sec = null; var u = URL.createObjectURL(f), el = new Audio(); el.preload = 'metadata'; el.onloadedmetadata = function(){ if (isFinite(el.duration)) { D.length_sec = Math.round(el.duration); if (step === 0) paint(); } URL.revokeObjectURL(u); }; el.src = u; });
   bindFile('ev', 'evidence', 52428800); bindFile('tp', 'trust', 52428800);
   if ($('add')) $('add').onclick = function(){ readCredits(); D.credits.push({ name: '', role: 'lyrics_music', share_pct: 0 }); paint(); };
@@ -182,9 +191,9 @@ function paint(){
   $('nx').onclick = function(){ if (step === STEPS.length - 1) return submit(this); if (collect() === true) { step++; paint(); scrollTo(0, 0); } };
 }
 (async function(){
-  if (!CS.sb) { box.innerHTML = '<p class="err">연결 준비가 덜 되었습니다.</p>'; return; }
+  if (!CS.sb) { box.innerHTML = '<p class="err">' + T('연결 준비가 덜 되었습니다.', 'Not connected yet.') + '</p>'; return; }
   ME = await CS.needLogin(); if (!ME) return;
-  D.credits = [{ name: (ME.author ? ME.author.display_name : ME.profile.nickname) + ' (나)', role: 'lyrics_music', share_pct: 100 }];
+  D.credits = [{ name: (ME.author ? ME.author.display_name : ME.profile.nickname) + T(' (나)', ' (me)'), role: 'lyrics_music', share_pct: 100 }];
   D.genre = CS.GENRES[1];
   if (ME.author) loadMine();
   paint();

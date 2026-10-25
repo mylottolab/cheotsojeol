@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>곡 정보 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<title data-en="Song — Cheotsojeol">곡 정보 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
 <style>
 .head{display:grid;grid-template-columns:360px 1fr;gap:26px;margin-top:26px}
 .cover{border-radius:18px;aspect-ratio:1/1;position:relative;display:flex;align-items:flex-end;padding:18px;overflow:hidden}
@@ -31,12 +31,12 @@
 .err{margin-top:10px;color:var(--coral);font-size:13px;min-height:1em}
 .track{cursor:pointer}
 </style></head><body>
-<main class="wrap" id="main"><p class="faint" style="margin-top:40px">곡을 불러오는 중…</p></main>
+<main class="wrap" id="main"><p class="faint" style="margin-top:40px" data-en="Loading song…">곡을 불러오는 중…</p></main>
 <audio id="au" preload="none"></audio>
 <script>
 CS.top('cs_index.html');
-var ID = new URLSearchParams(location.search).get('id'), E = CS.esc, S = null, ME = null, PASS = false, SRC = null;
-var ROLE = { lyrics_music:'작사 · 작곡', lyrics:'작사', music:'작곡', arrange:'편곡' };
+var T = CS.T, ID = new URLSearchParams(location.search).get('id'), E = CS.esc, S = null, ME = null, PASS = false, SRC = null;
+var ROLE = { lyrics_music:T('작사 · 작곡','Lyrics · Music'), lyrics:T('작사','Lyrics'), music:T('작곡','Music'), arrange:T('편곡','Arrangement') };
 function $(i){ return document.getElementById(i); }
 function tm(x){ x = Math.max(0, Math.floor(x || 0)); return Math.floor(x / 60) + ':' + ('0' + x % 60).slice(-2); }
 
@@ -54,32 +54,32 @@ async function load(){
   if (S.full && ME.user) { var l = await CS.sb.rpc('cs_song_lyrics', { p_song: ID }); S.lyrics = l.data; }
   paint();
 }
-function notFound(){ $('main').innerHTML = '<div class="card" style="margin-top:40px;padding:26px">곡을 찾을 수 없습니다. 공개가 끝났거나 주소가 잘못되었습니다.<br><a class="btn" style="margin-top:12px" href="cs_index.html">둘러보기로</a></div>'; }
+function notFound(){ $('main').innerHTML = '<div class="card" style="margin-top:40px;padding:26px">' + T('곡을 찾을 수 없습니다. 공개가 끝났거나 주소가 잘못되었습니다.', 'Song not found. It may no longer be public, or the link is wrong.') + '<br><a class="btn" style="margin-top:12px" href="cs_index.html">' + T('둘러보기로', 'Back to browse') + '</a></div>'; }
 function paint(){
-  var s = S; document.title = s.t + ' — 첫소절';
-  var lockLine = S.full ? (PASS ? '✅ 청취권으로 전체 듣기' : '✅ 전체 듣기(작가 본인 · 심사위원)') :
-    (ME.user ? (s.pv ? '▶ 작가가 허락한 15초 미리듣기 · ' : '') + '🔒 전체 듣기는 청취권이 필요합니다 <a class="btn gold" style="padding:7px 12px;font-size:13px" href="cs_pass.html">청취권 보기</a>'
-             : '🔒 ' + (s.pv ? '로그인하면 15초 미리듣기를 들을 수 있어요' : '듣기는 로그인 · 청취권이 필요합니다') + ' <a class="btn gold" style="padding:7px 12px;font-size:13px" href="cs_login.html?next=' + encodeURIComponent('cs_song.html?id=' + ID) + '">로그인</a>');
+  var s = S; document.title = s.t + T(' — 첫소절', ' — Cheotsojeol');
+  var lockLine = S.full ? (PASS ? T('✅ 청취권으로 전체 듣기', '✅ Full listening with your pass') : T('✅ 전체 듣기(작가 본인 · 심사위원)', '✅ Full listening (songwriter / reviewer)')) :
+    (ME.user ? (s.pv ? T('▶ 작가가 허락한 15초 미리듣기 · ', '▶ 15s preview allowed by the songwriter · ') : '') + T('🔒 전체 듣기는 청취권이 필요합니다', '🔒 A pass is needed to hear the full song') + ' <a class="btn gold" style="padding:7px 12px;font-size:13px" href="cs_pass.html">' + T('청취권 보기', 'See passes') + '</a>'
+             : '🔒 ' + (s.pv ? T('로그인하면 15초 미리듣기를 들을 수 있어요', 'Log in to hear a 15-second preview') : T('듣기는 로그인 · 청취권이 필요합니다', 'Listening requires login and a pass')) + ' <a class="btn gold" style="padding:7px 12px;font-size:13px" href="cs_login.html?next=' + encodeURIComponent('cs_song.html?id=' + ID) + '">' + T('로그인', 'Log in') + '</a>');
   $('main').innerHTML =
    '<div class="head"><div class="cover" style="' + CS.art(s) + '"><div class="wave">' + CS.wave(s.hue[0] % 7 + 1, 46) + '</div>' + (s.isNew ? '<span class="tag coral" style="position:relative">NEW</span>' : '') + '</div>' +
-   '<div class="info"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag">' + E(s.genre) + '</span>' + (s.mood ? '<span class="tag">' + E(s.mood) + '</span>' : '') + (s.status === 'listed' ? '<span class="tag mint">심사 통과</span>' : '<span class="tag coral">공개 전</span>') + '</div>' +
-   '<h1 style="margin-top:10px">' + E(s.t) + '</h1><div class="by"><b style="color:var(--text)">' + E(s.by) + '</b>' + (s.listed_at ? ' · 등록 ' + s.listed_at.slice(0, 7).replace('-', '.') : '') + '</div>' +
-   '<div class="specs"><div>길이<b>' + s.len + '</b></div><div>빠르기<b>' + (s.bpm ? s.bpm + ' BPM' : '—') + '</b></div><div>조<b>' + E(s.key || '—') + '</b></div><div>들은 횟수<b>' + s.plays.toLocaleString() + '</b></div></div>' +
+   '<div class="info"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="tag">' + E(CS.G(s.genre)) + '</span>' + (s.mood ? '<span class="tag">' + E(s.mood) + '</span>' : '') + (s.status === 'listed' ? '<span class="tag mint">' + T('심사 통과', 'Reviewed') + '</span>' : '<span class="tag coral">' + T('공개 전', 'Not public') + '</span>') + '</div>' +
+   '<h1 style="margin-top:10px">' + E(s.t) + '</h1><div class="by"><b style="color:var(--text)">' + E(s.by) + '</b>' + (s.listed_at ? T(' · 등록 ', ' · Listed ') + s.listed_at.slice(0, 7).replace('-', '.') : '') + '</div>' +
+   '<div class="specs"><div>' + T('길이', 'Length') + '<b>' + s.len + '</b></div><div>' + T('빠르기', 'Tempo') + '<b>' + (s.bpm ? s.bpm + ' BPM' : '—') + '</b></div><div>' + T('조', 'Key') + '<b>' + E(s.key || '—') + '</b></div><div>' + T('들은 횟수', 'Plays') + '<b>' + s.plays.toLocaleString() + '</b></div></div>' +
    '<div class="card player"><div class="row"><button class="pb" id="pb">▶</button><div class="track" id="track">' + CS.wave(3, 60) + '</div><span class="faint" id="tm">0:00 / ' + s.len + '</span></div>' +
    '<div class="lock">' + lockLine + '</div><div class="err" id="perr"></div></div>' +
-   '<div class="card buy"><div class="faint" style="font-size:13px">작가 희망가</div><div class="p">' + CS.won(s.price) + (s.negotiable ? '' : ' <small class="faint" style="font-size:13px">정가</small>') + '</div>' +
+   '<div class="card buy"><div class="faint" style="font-size:13px">' + T('작가 희망가', 'Asking price') + '</div><div class="p">' + CS.won(s.price) + (s.negotiable ? '' : ' <small class="faint" style="font-size:13px">' + T('정가', 'fixed') + '</small>') + '</div>' +
    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' + s.mode.map(CS.modeTag).join('') + '</div>' +
-   '<div class="acts"><button class="btn coral" id="nego">💬 협상 요청</button><button class="btn" id="dl">⬇ 검토용 다운로드 550원</button></div>' +
-   '<p class="hint" id="soon">검토용 파일에는 구매자를 알아볼 수 있는 표시가 들어가며, 듣고 검토하는 데만 쓸 수 있습니다. 곡의 권리는 계약을 마칠 때까지 작가에게 있습니다.</p></div></div></div>' +
-   '<div class="two" style="margin-top:22px"><div><div class="sect" style="margin-top:6px"><h2>가사</h2></div><div class="card" style="position:relative;overflow:hidden">' +
-     (S.full ? '<div class="lyrics">' + (S.lyrics ? E(S.lyrics) : '<span class="faint">연주곡이거나 가사를 올리지 않은 곡입니다.</span>') + '</div>'
-             : '<div class="lyrics blur">이 곡의 가사는 청취권이 있으면\n모두 볼 수 있습니다\n첫소절에서만 듣는 신곡\n가사 미리보기는 가려져 있어요</div><div class="lockcover">🔒 청취권이 있으면 가사 전체를 볼 수 있어요</div>') + '</div>' +
-     (s.intro ? '<div class="sect"><h2>곡 소개</h2></div><div class="card" style="padding:18px;line-height:1.8;font-size:14.5px;white-space:pre-line">' + E(s.intro) + '</div>' : '') + '</div>' +
-   '<div><div class="sect" style="margin-top:6px"><h2>작가 · 참여자</h2></div><div class="card" style="padding:18px;line-height:1.8;font-size:14.5px"><b>' + E(s.by) + '</b><br>' +
+   '<div class="acts"><button class="btn coral" id="nego">' + T('💬 협상 요청', '💬 Make an offer') + '</button><button class="btn" id="dl">' + T('⬇ 검토용 다운로드 550원', '⬇ Review copy ₩550') + '</button></div>' +
+   '<p class="hint" id="soon">' + T('검토용 파일에는 구매자를 알아볼 수 있는 표시가 들어가며, 듣고 검토하는 데만 쓸 수 있습니다. 곡의 권리는 계약을 마칠 때까지 작가에게 있습니다.', 'Review copies carry a mark identifying the buyer and may be used only for listening and review. The rights stay with the songwriter until a contract is signed.') + '</p></div></div></div>' +
+   '<div class="two" style="margin-top:22px"><div><div class="sect" style="margin-top:6px"><h2>' + T('가사', 'Lyrics') + '</h2></div><div class="card" style="position:relative;overflow:hidden">' +
+     (S.full ? '<div class="lyrics">' + (S.lyrics ? E(S.lyrics) : '<span class="faint">' + T('연주곡이거나 가사를 올리지 않은 곡입니다.', 'Instrumental, or no lyrics were provided.') + '</span>') + '</div>'
+             : '<div class="lyrics blur">' + T('이 곡의 가사는 청취권이 있으면\n모두 볼 수 있습니다\n첫소절에서만 듣는 신곡\n가사 미리보기는 가려져 있어요', 'The lyrics of this song\nare visible with a pass\nnew songs heard first here\nthe preview is hidden') + '</div><div class="lockcover">' + T('🔒 청취권이 있으면 가사 전체를 볼 수 있어요', '🔒 Get a pass to see the full lyrics') + '</div>') + '</div>' +
+     (s.intro ? '<div class="sect"><h2>' + T('곡 소개', 'About the song') + '</h2></div><div class="card" style="padding:18px;line-height:1.8;font-size:14.5px;white-space:pre-line">' + E(s.intro) + '</div>' : '') + '</div>' +
+   '<div><div class="sect" style="margin-top:6px"><h2>' + T('작가 · 참여자', 'Songwriter · credits') + '</h2></div><div class="card" style="padding:18px;line-height:1.8;font-size:14.5px"><b>' + E(s.by) + '</b><br>' +
      (s.bio ? '<span class="muted" style="white-space:pre-line">' + E(s.bio) + '</span><br>' : '') +
      '<div style="margin-top:8px" class="faint">' + S.credits.map(function(c){ return E(c.name) + ' — ' + ROLE[c.role] + ' ' + (+c.share_pct) + '%'; }).join('<br>') + '</div>' +
-     '<div class="faint" style="margin-top:10px;font-size:13px">판매자 정보: 성명 · 연락처는 계약 전에 확인할 수 있습니다. (중개자 고지에 따라 제공)</div>' +
-     '<div style="margin-top:12px"><button class="btn" style="font-size:13px;padding:7px 12px" id="rep">🚩 권리 침해 신고</button></div></div></div></div>';
+     '<div class="faint" style="margin-top:10px;font-size:13px">' + T('판매자 정보: 성명 · 연락처는 계약 전에 확인할 수 있습니다. (중개자 고지에 따라 제공)', 'Seller information: the songwriter’s legal name and contact details are shown before you sign a contract.') + '</div>' +
+     '<div style="margin-top:12px"><button class="btn" style="font-size:13px;padding:7px 12px" id="rep">' + T('🚩 권리 침해 신고', '🚩 Report infringement') + '</button></div></div></div></div>';
   bind();
 }
 /* ── 재생 ── */
@@ -91,10 +91,10 @@ function flush(final){
 }
 async function getSrc(){
   var r = await CS.sb.rpc('cs_song_audio', { p_song: ID }), d = r.data || {};
-  if (r.error || !d.ok) { var M = { need_pass:'🔒 이 곡은 청취권이 있어야 들을 수 있어요.', preview_limit:'오늘 미리듣기를 많이 하셨어요. 내일 다시 들을 수 있습니다.', not_listed:'지금은 공개되지 않은 곡입니다.', login:'로그인이 필요합니다.' };
-    $('perr').textContent = M[d.error] || ('재생할 수 없습니다: ' + (r.error ? r.error.message : d.error)); return null; }
+  if (r.error || !d.ok) { var M = { need_pass:T('🔒 이 곡은 청취권이 있어야 들을 수 있어요.', '🔒 You need a pass to hear this song.'), preview_limit:T('오늘 미리듣기를 많이 하셨어요. 내일 다시 들을 수 있습니다.', 'You have reached today’s preview limit. Try again tomorrow.'), not_listed:T('지금은 공개되지 않은 곡입니다.', 'This song is not public right now.'), login:T('로그인이 필요합니다.', 'Please log in.') };
+    $('perr').textContent = M[d.error] || (T('재생할 수 없습니다: ', 'Cannot play: ') + (r.error ? r.error.message : d.error)); return null; }
   var u = await CS.sb.storage.from(d.bucket).createSignedUrl(d.path, 3600);
-  if (u.error) { $('perr').textContent = '음원을 열지 못했습니다: ' + u.error.message; return null; }
+  if (u.error) { $('perr').textContent = T('음원을 열지 못했습니다: ', 'Could not open the audio: ') + u.error.message; return null; }
   mode = d.mode; return u.data.signedUrl;
 }
 function bind(){
@@ -102,42 +102,42 @@ function bind(){
   $('pb').onclick = async function(){
     var b = this; $('perr').textContent = '';
     if (!ME.user) { location.href = 'cs_login.html?next=' + encodeURIComponent('cs_song.html?id=' + ID); return; }
-    if (!S.full && !S.pv) { $('perr').textContent = '🔒 이 곡은 청취권이 있어야 들을 수 있어요.'; return; }
+    if (!S.full && !S.pv) { $('perr').textContent = T('🔒 이 곡은 청취권이 있어야 들을 수 있어요.', '🔒 You need a pass to hear this song.'); return; }
     if (!au.paused) { au.pause(); return; }
-    if (S.full && PASS && !agreed) { if (!confirm('본 콘텐츠는 디지털 상품으로, 재생을 시작하면 청약철회(환불)가 제한됩니다. 계속할까요?')) return; agreed = true; }
+    if (S.full && PASS && !agreed) { if (!confirm(T('본 콘텐츠는 디지털 상품으로, 재생을 시작하면 청약철회(환불)가 제한됩니다. 계속할까요?', 'This is digital content. Once playback starts, your right to withdraw (refund) is limited. Continue?'))) return; agreed = true; }
     if (!SRC) { b.textContent = '…'; SRC = await getSrc(); b.textContent = '▶'; if (!SRC) return; au.src = SRC; }
-    au.play().catch(function(e){ $('perr').textContent = '재생하지 못했습니다: ' + e.message; });
+    au.play().catch(function(e){ $('perr').textContent = T('재생하지 못했습니다: ', 'Could not play: ') + e.message; });
   };
   au.onplay = function(){ $('pb').textContent = '❚❚'; lastT = au.currentTime; };
   au.onpause = function(){ $('pb').textContent = '▶'; flush(true); };
-  au.onended = function(){ $('pb').textContent = '▶'; flush(true); if (mode === 'preview') $('tm').textContent = '15초 미리듣기 끝 · 청취권으로 전체 듣기'; };
+  au.onended = function(){ $('pb').textContent = '▶'; flush(true); if (mode === 'preview') $('tm').textContent = T('15초 미리듣기 끝 · 청취권으로 전체 듣기', 'Preview ended · get a pass for the full song'); };
   au.ontimeupdate = function(){
     var t = au.currentTime, d = t - lastT; if (d > 0 && d < 2) heard += d; lastT = t;
     var tot = mode === 'preview' ? 15 : (isFinite(au.duration) && au.duration ? au.duration : (S.sec || 1));
     if (mode === 'preview' && t >= 15) { au.pause(); au.currentTime = 0; }
-    bars(t / tot); $('tm').textContent = tm(t) + ' / ' + (mode === 'preview' ? '0:15 미리듣기' : tm(tot)); flush(false);
+    bars(t / tot); $('tm').textContent = tm(t) + ' / ' + (mode === 'preview' ? T('0:15 미리듣기', '0:15 preview') : tm(tot)); flush(false);
   };
   $('track').onclick = function(e){ if (!SRC || mode !== 'full' || !isFinite(au.duration)) return; var r = this.getBoundingClientRect(); au.currentTime = au.duration * (e.clientX - r.left) / r.width; };
   window.addEventListener('pagehide', function(){ flush(true); });
-  $('nego').onclick = $('dl').onclick = function(){ $('soon').innerHTML = '<b style="color:var(--gold)">협상 요청과 검토용 다운로드는 곧 열립니다.</b> 지금은 청취권으로 곡을 충분히 들어 보세요.'; };
+  $('nego').onclick = $('dl').onclick = function(){ $('soon').innerHTML = '<b style="color:var(--gold)">' + T('협상 요청과 검토용 다운로드는 곧 열립니다.', 'Offers and review downloads are opening soon.') + '</b> ' + T('지금은 청취권으로 곡을 충분히 들어 보세요.', 'For now, enjoy listening with a pass.'); };
   $('rep').onclick = report;
 }
 /* ── 권리 침해 신고 ── */
 function report(){
   if (!ME.user) { location.href = 'cs_login.html?next=' + encodeURIComponent('cs_song.html?id=' + ID); return; }
   var m = document.createElement('div'); m.className = 'modal';
-  m.innerHTML = '<div class="card"><h2 style="font-size:19px">권리 침해 신고</h2><p class="muted" style="font-size:13.5px;line-height:1.7;margin:8px 0 0">신고가 들어오면 이 곡은 <b style="color:var(--text)">바로 숨겨지고</b>, 운영진이 작가의 소명을 들은 뒤 처리합니다. 사실이 아닌 신고는 책임을 질 수 있습니다.</p>' +
-    '<label class="f">신고 종류</label><select class="in" id="rk"><option value="plagiarism">표절 (내 곡이나 다른 곡을 베낌)</option><option value="rights">권리 침해 (내 권리가 있는 곡을 허락 없이 등록)</option><option value="other">기타</option></select>' +
-    '<label class="f">내용 (10자 이상 · 원곡 제목, 비슷한 부분 등)</label><textarea class="in" id="rd" maxlength="4000"></textarea>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" id="rx">취소</button><button class="btn coral" id="rs">신고하기</button></div><div class="err" id="rerr"></div></div>';
+  m.innerHTML = '<div class="card"><h2 style="font-size:19px">' + T('권리 침해 신고', 'Report infringement') + '</h2><p class="muted" style="font-size:13.5px;line-height:1.7;margin:8px 0 0">' + T('신고가 들어오면 이 곡은 <b style="color:var(--text)">바로 숨겨지고</b>, 운영진이 작가의 소명을 들은 뒤 처리합니다. 사실이 아닌 신고는 책임을 질 수 있습니다.', 'Once reported, the song is <b style="color:var(--text)">hidden immediately</b> and our team decides after hearing the songwriter. False reports may carry liability.') + '</p>' +
+    '<label class="f">' + T('신고 종류', 'Type') + '</label><select class="in" id="rk"><option value="plagiarism">' + T('표절 (내 곡이나 다른 곡을 베낌)', 'Plagiarism (copies my song or another song)') + '</option><option value="rights">' + T('권리 침해 (내 권리가 있는 곡을 허락 없이 등록)', 'Rights infringement (my song listed without permission)') + '</option><option value="other">' + T('기타', 'Other') + '</option></select>' +
+    '<label class="f">' + T('내용 (10자 이상 · 원곡 제목, 비슷한 부분 등)', 'Details (10+ characters · original title, similar parts, etc.)') + '</label><textarea class="in" id="rd" maxlength="4000"></textarea>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" id="rx">' + T('취소', 'Cancel') + '</button><button class="btn coral" id="rs">' + T('신고하기', 'Report') + '</button></div><div class="err" id="rerr"></div></div>';
   document.body.appendChild(m);
   $('rx').onclick = function(){ m.remove(); };
   $('rs').onclick = async function(){
-    var d = $('rd').value.trim(); if (d.length < 10) { $('rerr').textContent = '내용을 10자 이상 적어 주세요.'; return; }
+    var d = $('rd').value.trim(); if (d.length < 10) { $('rerr').textContent = T('내용을 10자 이상 적어 주세요.', 'Please write at least 10 characters.'); return; }
     this.disabled = true;
     var r = await CS.sb.rpc('cs_report', { p_song: ID, p_kind: $('rk').value, p_detail: d }), x = r.data || {};
-    if (r.error || !x.ok) { this.disabled = false; $('rerr').textContent = x.error === 'slow_down' ? '오늘은 신고를 더 할 수 없습니다.' : '접수하지 못했습니다: ' + (r.error ? r.error.message : x.error); return; }
-    m.querySelector('.card').innerHTML = '<h2 style="font-size:19px">신고가 접수되었습니다</h2><p class="muted" style="line-height:1.7">곡은 확인이 끝날 때까지 숨겨집니다. 처리 결과는 운영진이 알려 드립니다.</p><button class="btn gold" style="width:100%;margin-top:10px" onclick="location.href=\'cs_index.html\'">확인</button>';
+    if (r.error || !x.ok) { this.disabled = false; $('rerr').textContent = x.error === 'slow_down' ? T('오늘은 신고를 더 할 수 없습니다.', 'You cannot file more reports today.') : T('접수하지 못했습니다: ', 'Could not submit: ') + (r.error ? r.error.message : x.error); return; }
+    m.querySelector('.card').innerHTML = '<h2 style="font-size:19px">' + T('신고가 접수되었습니다', 'Report received') + '</h2><p class="muted" style="line-height:1.7">' + T('곡은 확인이 끝날 때까지 숨겨집니다. 처리 결과는 운영진이 알려 드립니다.', 'The song stays hidden until we finish checking. We will let you know the outcome.') + '</p><button class="btn gold" style="width:100%;margin-top:10px" onclick="location.href=\'cs_index.html\'">' + T('확인', 'OK') + '</button>';
   };
 }
 load();

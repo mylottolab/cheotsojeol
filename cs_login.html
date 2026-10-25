@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>로그인 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
+<title data-en="Log in — Cheotsojeol">로그인 — 첫소절</title><link rel="stylesheet" href="cs.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js"></script><script src="cs.js"></script>
 <style>
 .box{max-width:440px;margin:40px auto 0;padding:26px}
 .box h2{font-size:22px}
@@ -10,119 +10,128 @@
 <main class="wrap"><div class="card box" id="box"></div></main>
 <script>
 CS.top('');
-var box = document.getElementById('box');
+var T = CS.T, box = document.getElementById('box');
 var NEXT = (new URLSearchParams(location.search).get('next') || 'cs_index.html').replace(/^[a-z]+:|^\/\//i, '');
 var email = '', viaCode = false;
+var B = function(t){ return '<b style="color:var(--text)">' + t + '</b>'; };
+var L_GET = T('로그인 번호 받기 (처음 · 비밀번호 잊었을 때)', 'Email me a login code (first time / forgot password)');
 function err(t){ document.getElementById('err').textContent = t || ''; }
-function busy(b, on, label){ b.disabled = on; b.textContent = on ? '잠시만요…' : label; }
+function busy(b, on, label){ b.disabled = on; b.textContent = on ? T('잠시만요…', 'One moment…') : label; }
 
 function stepEmail(){
-  box.innerHTML = '<h2>로그인 · 회원가입</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">처음에는 이메일로 받은 <b style="color:var(--text)">로그인 번호</b>로 들어오고, 그때 비밀번호를 만들어 두시면 다음부터는 <b style="color:var(--text)">메일 없이</b> 바로 로그인됩니다. 한 번 로그인한 기기는 로그아웃하기 전까지 로그인이 유지됩니다.</p>' +
-    '<label class="f">이메일</label><input class="in" id="em" type="email" autocomplete="email" placeholder="you@example.com">' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인 번호 받기 (처음 · 비밀번호 잊었을 때)</button><button class="btn" id="pw" style="width:100%;margin-top:8px">🔑 비밀번호로 로그인</button><div class="err" id="err"></div>';
+  box.innerHTML = '<h2>' + T('로그인 · 회원가입', 'Log in · Sign up') + '</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">' +
+    T('처음에는 이메일로 받은 ' + B('로그인 번호') + '로 들어오고, 그때 비밀번호를 만들어 두시면 다음부터는 ' + B('메일 없이') + ' 바로 로그인됩니다. 한 번 로그인한 기기는 로그아웃하기 전까지 로그인이 유지됩니다.',
+      'The first time, sign in with a ' + B('login code') + ' we email you. Create a password then, and next time you can log in ' + B('without waiting for email') + '. You stay logged in on this device until you log out.') + '</p>' +
+    '<label class="f">' + T('이메일', 'Email') + '</label><input class="in" id="em" type="email" autocomplete="email" placeholder="you@example.com">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px;white-space:normal">' + L_GET + '</button><button class="btn" id="pw" style="width:100%;margin-top:8px">' + T('🔑 비밀번호로 로그인', '🔑 Log in with password') + '</button><div class="err" id="err"></div>';
   var b = document.getElementById('go'), em = document.getElementById('em');
   if (email) em.value = email;
   document.getElementById('pw').onclick = function(){ email = em.value.trim().toLowerCase(); stepPw(); };
   em.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
   b.onclick = async function(){
     email = em.value.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err('이메일 주소를 다시 확인해 주세요.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err(T('이메일 주소를 다시 확인해 주세요.', 'Please check your email address.'));
     busy(b, true);
     var r = await CS.sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + '/cs_login.html?next=' + encodeURIComponent(NEXT) } });
-    busy(b, false, '로그인 번호 받기 (처음 · 비밀번호 잊었을 때)');
-    if (r.error) return err(/rate|seconds|limit/i.test(r.error.message) ? '메일을 너무 자주 보냈습니다. 1분쯤 뒤에 다시 눌러 주세요.' : '메일을 보내지 못했습니다: ' + r.error.message);
+    busy(b, false, L_GET);
+    if (r.error) return err(/rate|seconds|limit/i.test(r.error.message) ? T('메일을 너무 자주 보냈습니다. 1분쯤 뒤에 다시 눌러 주세요.', 'Too many emails. Please try again in about a minute.') : T('메일을 보내지 못했습니다: ', 'Could not send the email: ') + r.error.message);
     stepCode();
   };
 }
 function stepCode(){
-  box.innerHTML = '<h2>메일을 확인해 주세요</h2><p class="muted" style="line-height:1.8;margin:10px 0 0"><b style="color:var(--text)">' + CS.esc(email) + '</b>(으)로 보낸 메일의 <b style="color:var(--text)">로그인 번호(8자리)</b>를 넣어 주세요. 메일 안의 링크를 눌러도 됩니다. 메일이 안 보이면 스팸함도 봐 주세요.</p>' +
-    '<label class="f">로그인 번호</label><input class="in code" id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="········">' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px">이메일 다시 넣기</button><div class="err" id="err"></div>';
+  box.innerHTML = '<h2>' + T('메일을 확인해 주세요', 'Check your email') + '</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">' +
+    T(B(CS.esc(email)) + '(으)로 보낸 메일의 ' + B('로그인 번호(8자리)') + '를 넣어 주세요. 메일 안의 링크를 눌러도 됩니다. 메일이 안 보이면 스팸함도 봐 주세요.',
+      'Enter the ' + B('8-digit login code') + ' we sent to ' + B(CS.esc(email)) + '. You can also tap the link in the email. Can’t find it? Check your spam folder.') + '</p>' +
+    '<label class="f">' + T('로그인 번호', 'Login code') + '</label><input class="in code" id="cd" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="········">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">' + T('로그인', 'Log in') + '</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px">' + T('이메일 다시 넣기', 'Use a different email') + '</button><div class="err" id="err"></div>';
   var b = document.getElementById('go'), cd = document.getElementById('cd');
   cd.focus(); cd.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
   document.getElementById('bk').onclick = stepEmail;
   b.onclick = async function(){
     var t = cd.value.replace(/\D/g, '');
-    if (t.length < 6) return err('메일로 받은 번호를 넣어 주세요.');
+    if (t.length < 6) return err(T('메일로 받은 번호를 넣어 주세요.', 'Please enter the code from the email.'));
     busy(b, true);
     var r = await CS.sb.auth.verifyOtp({ email: email, token: t, type: 'email' });
-    busy(b, false, '로그인');
-    if (r.error) return err('번호가 맞지 않거나 시간이 지났습니다. 다시 확인하거나 이메일을 다시 넣어 주세요.');
+    busy(b, false, T('로그인', 'Log in'));
+    if (r.error) return err(T('번호가 맞지 않거나 시간이 지났습니다. 다시 확인하거나 이메일을 다시 넣어 주세요.', 'The code is wrong or expired. Check it again or request a new one.'));
     viaCode = true; after();
   };
 }
 function stepNick(){
-  box.innerHTML = '<h2>반갑습니다!</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">첫소절에서 쓸 <b style="color:var(--text)">별명</b>을 정해 주세요. 협상방에서 상대에게 보이는 이름입니다(실명이 아니어도 됩니다).</p>' +
-    '<label class="f">별명 (2~20자)</label><input class="in" id="nk" maxlength="20">' +
-    '<label class="agree"><input type="checkbox" id="a1"> [필수] <a href="cs_terms.html" target="_blank" style="text-decoration:underline">이용약관</a>에 동의합니다.</label>' +
-    '<label class="agree"><input type="checkbox" id="a2"> [필수] <a href="cs_privacy.html" target="_blank" style="text-decoration:underline">개인정보 수집 · 이용</a>(이메일 · 별명)에 동의합니다.</label>' +
-    '<label class="agree"><input type="checkbox" id="a3"> [필수] 만 14세 이상입니다.</label>' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">시작하기</button><div class="err" id="err"></div>';
+  var U = function(h, t){ return '<a href="' + h + '" target="_blank" style="text-decoration:underline">' + t + '</a>'; };
+  box.innerHTML = '<h2>' + T('반갑습니다!', 'Welcome!') + '</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">' +
+    T('첫소절에서 쓸 ' + B('별명') + '을 정해 주세요. 협상방에서 상대에게 보이는 이름입니다(실명이 아니어도 됩니다).', 'Choose a ' + B('nickname') + ' for Cheotsojeol. It is the name others see in the deal room (it doesn’t have to be your real name).') + '</p>' +
+    '<label class="f">' + T('별명 (2~20자)', 'Nickname (2–20 characters)') + '</label><input class="in" id="nk" maxlength="20">' +
+    '<label class="agree"><input type="checkbox" id="a1"> ' + T('[필수] ' + U('cs_terms.html', '이용약관') + '에 동의합니다.', '[Required] I agree to the ' + U('cs_terms.html', 'Terms of Service') + '.') + '</label>' +
+    '<label class="agree"><input type="checkbox" id="a2"> ' + T('[필수] ' + U('cs_privacy.html', '개인정보 수집 · 이용') + '(이메일 · 별명)에 동의합니다.', '[Required] I agree to the ' + U('cs_privacy.html', 'collection and use of personal data') + ' (email, nickname).') + '</label>' +
+    '<label class="agree"><input type="checkbox" id="a3"> ' + T('[필수] 만 14세 이상입니다.', '[Required] I am 14 or older.') + '</label>' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">' + T('시작하기', 'Get started') + '</button><div class="err" id="err"></div>';
   var b = document.getElementById('go');
   b.onclick = async function(){
     var nk = document.getElementById('nk').value.trim();
-    if (nk.length < 2) return err('별명은 2자 이상으로 정해 주세요.');
-    if (!['a1','a2','a3'].every(function(i){ return document.getElementById(i).checked; })) return err('필수 항목에 모두 동의해 주세요.');
+    if (nk.length < 2) return err(T('별명은 2자 이상으로 정해 주세요.', 'Nickname must be at least 2 characters.'));
+    if (!['a1','a2','a3'].every(function(i){ return document.getElementById(i).checked; })) return err(T('필수 항목에 모두 동의해 주세요.', 'Please accept all required items.'));
     busy(b, true);
     var m = await CS.me(true);
     var r = await CS.sb.from('cs_profiles').insert({ id: m.user.id, nickname: nk });
-    busy(b, false, '시작하기');
-    if (r.error && r.error.code !== '23505') return err('저장하지 못했습니다: ' + r.error.message + ' [' + (r.error.code || '') + ']');
+    busy(b, false, T('시작하기', 'Get started'));
+    if (r.error && r.error.code !== '23505') return err(T('저장하지 못했습니다: ', 'Could not save: ') + r.error.message + ' [' + (r.error.code || '') + ']');
     var chk = await CS.me(true);
-    if (!chk.user) return err('로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]');
-    if (!chk.profile) return err('별명은 저장했는데 다시 읽지 못했습니다. 이 화면을 캡처해서 보내 주세요. ' + (chk.err || '[noprofile]'));
+    if (!chk.user) return err(T('로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요.', 'Your login was lost. Please send us a screenshot.') + ' [nosession]');
+    if (!chk.profile) return err(T('별명은 저장했는데 다시 읽지 못했습니다. 이 화면을 캡처해서 보내 주세요.', 'Nickname saved but could not be read back. Please send us a screenshot.') + ' ' + (chk.err || '[noprofile]'));
     if (viaCode) return stepSetPw();
     location.href = NEXT;
   };
 }
 function stepPw(){
-  box.innerHTML = '<h2>비밀번호로 로그인</h2>' +
-    '<label class="f">이메일</label><input class="in" id="em" type="email" autocomplete="email" value="' + CS.esc(email) + '">' +
-    '<label class="f">비밀번호</label><input class="in" id="pw1" type="password" autocomplete="current-password">' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">로그인</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px">비밀번호가 없거나 잊었어요 → 메일로 번호 받기</button><div class="err" id="err"></div>';
+  box.innerHTML = '<h2>' + T('비밀번호로 로그인', 'Log in with password') + '</h2>' +
+    '<label class="f">' + T('이메일', 'Email') + '</label><input class="in" id="em" type="email" autocomplete="email" value="' + CS.esc(email) + '">' +
+    '<label class="f">' + T('비밀번호', 'Password') + '</label><input class="in" id="pw1" type="password" autocomplete="current-password">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">' + T('로그인', 'Log in') + '</button><button class="btn ghost" id="bk" style="width:100%;margin-top:8px;white-space:normal">' + T('비밀번호가 없거나 잊었어요 → 메일로 번호 받기', 'No password or forgot it → email me a code') + '</button><div class="err" id="err"></div>';
   var b = document.getElementById('go'), p = document.getElementById('pw1');
   (email ? p : document.getElementById('em')).focus();
   p.onkeydown = function(e){ if (e.key === 'Enter') b.click(); };
   document.getElementById('bk').onclick = function(){ email = document.getElementById('em').value.trim().toLowerCase(); stepEmail(); };
   b.onclick = async function(){
     email = document.getElementById('em').value.trim().toLowerCase();
-    if (!email || !p.value) return err('이메일과 비밀번호를 넣어 주세요.');
+    if (!email || !p.value) return err(T('이메일과 비밀번호를 넣어 주세요.', 'Please enter your email and password.'));
     busy(b, true);
     var r = await CS.sb.auth.signInWithPassword({ email: email, password: p.value });
-    busy(b, false, '로그인');
-    if (r.error) return err(/invalid/i.test(r.error.message) ? '이메일이나 비밀번호가 맞지 않습니다. 아직 비밀번호를 만들지 않으셨다면 아래 「메일로 번호 받기」로 들어와 주세요.' : '로그인하지 못했습니다: ' + r.error.message);
+    busy(b, false, T('로그인', 'Log in'));
+    if (r.error) return err(/invalid/i.test(r.error.message) ? T('이메일이나 비밀번호가 맞지 않습니다. 아직 비밀번호를 만들지 않으셨다면 아래 「메일로 번호 받기」로 들어와 주세요.', 'Wrong email or password. If you haven’t created a password yet, use “email me a code” below.') : T('로그인하지 못했습니다: ', 'Could not log in: ') + r.error.message);
     after();
   };
 }
 function stepSetPw(){
-  box.innerHTML = '<h2>비밀번호를 만들어 둘까요?</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">만들어 두시면 다음부터 폰이나 다른 컴퓨터에서도 <b style="color:var(--text)">메일을 기다리지 않고</b> 이메일 + 비밀번호로 바로 로그인합니다.</p>' +
-    '<label class="f">새 비밀번호 (8자 이상)</label><input class="in" id="p1" type="password" autocomplete="new-password">' +
-    '<label class="f">한 번 더</label><input class="in" id="p2" type="password" autocomplete="new-password">' +
-    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">비밀번호 만들기</button><button class="btn ghost" id="sk" style="width:100%;margin-top:8px">다음에 할게요</button><div class="err" id="err"></div>';
+  box.innerHTML = '<h2>' + T('비밀번호를 만들어 둘까요?', 'Create a password?') + '</h2><p class="muted" style="line-height:1.8;margin:10px 0 0">' +
+    T('만들어 두시면 다음부터 폰이나 다른 컴퓨터에서도 ' + B('메일을 기다리지 않고') + ' 이메일 + 비밀번호로 바로 로그인합니다.', 'With a password you can log in on your phone or any computer with email + password, ' + B('without waiting for an email') + '.') + '</p>' +
+    '<label class="f">' + T('새 비밀번호 (8자 이상)', 'New password (8+ characters)') + '</label><input class="in" id="p1" type="password" autocomplete="new-password">' +
+    '<label class="f">' + T('한 번 더', 'Confirm') + '</label><input class="in" id="p2" type="password" autocomplete="new-password">' +
+    '<button class="btn gold" id="go" style="width:100%;margin-top:16px">' + T('비밀번호 만들기', 'Create password') + '</button><button class="btn ghost" id="sk" style="width:100%;margin-top:8px">' + T('다음에 할게요', 'Maybe later') + '</button><div class="err" id="err"></div>';
   var b = document.getElementById('go');
   document.getElementById('sk').onclick = function(){ location.href = NEXT; };
   b.onclick = async function(){
     var a = document.getElementById('p1').value, c = document.getElementById('p2').value;
-    if (a.length < 8) return err('비밀번호는 8자 이상으로 만들어 주세요.');
-    if (a !== c) return err('두 칸의 비밀번호가 다릅니다.');
+    if (a.length < 8) return err(T('비밀번호는 8자 이상으로 만들어 주세요.', 'Password must be at least 8 characters.'));
+    if (a !== c) return err(T('두 칸의 비밀번호가 다릅니다.', 'The passwords don’t match.'));
     busy(b, true);
     var r = await CS.sb.auth.updateUser({ password: a, data: { has_pw: true } });
-    busy(b, false, '비밀번호 만들기');
-    if (r.error) return err(/weak|short|characters/i.test(r.error.message) ? '더 어려운 비밀번호로 만들어 주세요(영문 · 숫자 섞기).' : '만들지 못했습니다: ' + r.error.message);
-    box.innerHTML = '<h2>비밀번호를 만들었습니다 ✓</h2><p class="muted" style="line-height:1.8">다음부터는 「🔑 비밀번호로 로그인」을 누르세요.</p>';
+    busy(b, false, T('비밀번호 만들기', 'Create password'));
+    if (r.error) return err(/weak|short|characters/i.test(r.error.message) ? T('더 어려운 비밀번호로 만들어 주세요(영문 · 숫자 섞기).', 'Please choose a stronger password (mix letters and numbers).') : T('만들지 못했습니다: ', 'Could not create it: ') + r.error.message);
+    box.innerHTML = '<h2>' + T('비밀번호를 만들었습니다 ✓', 'Password created ✓') + '</h2><p class="muted" style="line-height:1.8">' + T('다음부터는 「🔑 비밀번호로 로그인」을 누르세요.', 'Next time, choose “🔑 Log in with password”.') + '</p>';
     setTimeout(function(){ location.href = NEXT; }, 1500);
   };
 }
 async function after(){
   var m = await CS.me(true);
-  if (!m.user) { stepEmail(); if (/why=nosession/.test(location.search)) err('앞 화면에서 로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요. [nosession]'); return; }
+  if (!m.user) { stepEmail(); if (/why=nosession/.test(location.search)) err(T('앞 화면에서 로그인 정보가 사라졌습니다. 이 화면을 캡처해서 보내 주세요.', 'Your login was lost on the previous screen. Please send us a screenshot.') + ' [nosession]'); return; }
   try { localStorage.setItem('cs_was_in', '1'); } catch (e) {}
-  if (m.err) { stepNick(); return err('회원 정보를 읽지 못했습니다: ' + m.err); }
+  if (m.err) { stepNick(); return err(T('회원 정보를 읽지 못했습니다: ', 'Could not read your account: ') + m.err); }
   if (!m.profile) return stepNick();
   if (viaCode && !(m.user.user_metadata && m.user.user_metadata.has_pw)) return stepSetPw();
   location.href = NEXT;
 }
-if (CS.diag.ls === 0) setTimeout(function(){ err('이 브라우저가 첫소절의 정보 저장(사이트 데이터)을 막고 있어, 화면을 옮기면 로그인이 풀립니다. [storage]'); }, 50);
-if (!CS.sb) box.innerHTML = '<p class="err">연결 준비가 덜 되었습니다. 잠시 뒤 다시 열어 주세요.</p>';
+if (CS.diag.ls === 0) setTimeout(function(){ err(T('이 브라우저가 첫소절의 정보 저장(사이트 데이터)을 막고 있어, 화면을 옮기면 로그인이 풀립니다.', 'This browser blocks site data for Cheotsojeol, so you’ll be logged out when you change pages.') + ' [storage]'); }, 50);
+if (!CS.sb) box.innerHTML = '<p class="err">' + T('연결 준비가 덜 되었습니다. 잠시 뒤 다시 열어 주세요.', 'Not connected yet. Please reopen in a moment.') + '</p>';
 else { CS.sb.auth.onAuthStateChange(function(ev){ if (ev === 'SIGNED_IN' && !email) after(); }); after(); }
 </script></body></html>

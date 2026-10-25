@@ -12,3 +12,4 @@
 4. supabase/4_admin_patch.sql
 5. supabase/5_listen_patch.sql
 6. supabase/6_account_patch.sql
+7. supabase/7_intl_patch.sql

@@ -1,5 +1,12 @@
 /* 첫소절 — 미리보기용 공용 스크립트 (보기 자료 · 진짜 음원 없음) */
 var CS = {};
+/* ── 언어(한국어 / English) ── */
+CS.lang = (function(){ try { var v = localStorage.getItem('cs_lang'); if (v === 'ko' || v === 'en') return v; } catch (e) {} return /^ko/i.test(navigator.language || 'ko') ? 'ko' : 'en'; })();
+document.documentElement.lang = CS.lang;
+CS.T = function(ko, en){ return CS.lang === 'en' && en != null ? en : ko; };
+CS.setLang = function(l){ try { localStorage.setItem('cs_lang', l); } catch (e) {} location.reload(); };
+CS.GEN_EN = { '전체':'All', '발라드':'Ballad', '댄스':'Dance', '팝':'Pop', '힙합':'Hip-hop', 'R&B':'R&B', '어쿠스틱':'Acoustic', '록':'Rock', '트로트':'Trot', '재즈':'Jazz', '클래식':'Classical', '동요':'Kids', 'CCM':'CCM', '광고 · 배경음악':'Ads · BGM' };
+CS.G = function(g){ return CS.lang === 'en' ? (CS.GEN_EN[g] || g) : g; };
 CS.SONGS = [
   { id:'s01', t:'새벽 세 시의 고백', by:'윤슬', genre:'발라드', mood:'잔잔한', bpm:72, key:'E♭', len:'3:48', price:3000000, mode:['양도','독점'], hue:[262,330], pv:true, plays:418, likes:57, isNew:true },
   { id:'s02', t:'Neon Runner', by:'J.Park', genre:'댄스', mood:'신나는', bpm:124, key:'F#m', len:'3:12', price:5000000, mode:['독점'], hue:[190,280], plays:902, likes:131 },
@@ -11,32 +18,34 @@ CS.SONGS = [
   { id:'s08', t:'광고 BGM · Morning Coffee', by:'Lumi', genre:'광고 · 배경음악', mood:'산뜻한', bpm:100, key:'A', len:'1:30', price:800000, mode:['비독점'], hue:[40,180], plays:288, likes:22 }
 ];
 CS.GENRES = ['전체','발라드','댄스','팝','힙합','R&B','어쿠스틱','록','트로트','재즈','클래식','동요','CCM','광고 · 배경음악'];
-CS.won = function(n){ return n >= 10000 ? (n / 10000).toLocaleString() + '만 원' : n.toLocaleString() + '원'; };
+CS.won = function(n){ n = +n || 0; if (CS.lang === 'en') return '₩' + n.toLocaleString('en-US'); return n >= 10000 ? (n / 10000).toLocaleString() + '만 원' : n.toLocaleString() + '원'; };
 CS.art = function(s){ return 'background:linear-gradient(135deg,hsl(' + s.hue[0] + ' 62% 42%),hsl(' + s.hue[1] + ' 58% 30%))'; };
 CS.wave = function(seed, n){ var h = ''; for (var i = 0; i < (n || 34); i++) { var v = Math.abs(Math.sin(i * 1.7 + seed) * 0.7 + Math.sin(i * 0.43 + seed * 2) * 0.3); h += '<i style="height:' + Math.round(14 + v * 86) + '%"></i>'; } return h; };
-CS.modeTag = function(m){ return '<span class="tag ' + (m === '양도' ? 'gold' : m === '독점' ? 'violet' : 'mint') + '">' + m + (m === '양도' ? '' : ' 이용허락') + '</span>'; };
+CS.modeTag = function(m){ return '<span class="tag ' + (m === '양도' ? 'gold' : m === '독점' ? 'violet' : 'mint') + '">' + CS.T(m + (m === '양도' ? '' : ' 이용허락'), { '양도':'Buyout', '독점':'Exclusive license', '비독점':'Non-exclusive license' }[m]) + '</span>'; };
 CS.card = function(s, i){
   return '<a class="card song" href="cs_song.html?id=' + s.id + '">' +
     '<div class="art" style="' + CS.art(s) + '"><div class="wave">' + CS.wave(i + 1) + '</div><span class="play">▶</span>' +
     (s.isNew ? '<span class="tag coral" style="position:relative">NEW</span>' : '') + '</div>' +
     '<div class="body"><div class="t">' + CS.esc(s.t) + '</div><div class="by">' + CS.esc(s.by) + ' · ' + s.len + '</div>' +
-    '<div class="meta">' + (s.pv ? '<span class="tag coral">▶ 15초 미리듣기</span>' : '') + '<span class="tag">' + CS.esc(s.genre) + '</span>' + (s.mood ? '<span class="tag">' + CS.esc(s.mood) + '</span>' : '') + s.mode.map(CS.modeTag).join('') + '</div>' +
-    '<div class="price"><span class="faint">희망가</span><b>' + CS.won(s.price) + '</b></div></div></a>';
+    '<div class="meta">' + (s.pv ? '<span class="tag coral">' + CS.T('▶ 15초 미리듣기', '▶ 15s preview') + '</span>' : '') + '<span class="tag">' + CS.esc(CS.G(s.genre)) + '</span>' + (s.mood ? '<span class="tag">' + CS.esc(s.mood) + '</span>' : '') + s.mode.map(CS.modeTag).join('') + '</div>' +
+    '<div class="price"><span class="faint">' + CS.T('희망가', 'Asking price') + '</span><b>' + CS.won(s.price) + '</b></div></div></a>';
 };
 CS.top = function(on){
-  var items = [['cs_index.html','둘러보기'],['cs_pass.html','청취권'],['cs_apply.html','곡 등록 신청'],['cs_talk.html','협상방'],['cs_admin.html','심사함']];
-  var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>첫소절<small>새 노래가 처음 울리는 곳</small></a><nav class="nav">' +
+  var T = CS.T, items = [['cs_index.html',T('둘러보기','Browse')],['cs_pass.html',T('청취권','Passes')],['cs_apply.html',T('곡 등록 신청','Submit a song')],['cs_talk.html',T('협상방','Deals')],['cs_admin.html',T('심사함','Review')]];
+  var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>' + T('첫소절', 'Cheotsojeol') + '<small>' + T('새 노래가 처음 울리는 곳', 'Where new songs are heard first') + '</small></a><nav class="nav">' +
     items.map(function(x){ return '<a href="' + x[0] + '"' + (x[0] === on ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') +
-    '<a class="cta" id="csLogin" href="cs_login.html">로그인</a></nav></div></header>';
+    '<a href="#" id="csLang" title="Language">' + (CS.lang === 'en' ? '한국어' : 'EN') + '</a><a class="cta" id="csLogin" href="cs_login.html">' + T('로그인', 'Log in') + '</a></nav></div></header>';
   document.body.insertAdjacentHTML('afterbegin', h);
+  document.getElementById('csLang').onclick = function(){ CS.setLang(CS.lang === 'en' ? 'ko' : 'en'); return false; };
   CS.me().then(function(m){ var a = document.getElementById('csLogin'); if (!a) return;
     var adm = document.querySelector('.nav a[href="cs_admin.html"]'); if (adm && !(m.profile && (m.profile.role === 'admin' || m.profile.role === 'reviewer'))) adm.style.display = 'none';
-    if (m.user) { a.textContent = '👤 ' + (m.profile ? m.profile.nickname : '내 정보'); a.href = 'cs_me.html'; }
+    if (m.user) { a.textContent = '👤 ' + (m.profile ? m.profile.nickname : T('내 정보', 'My page')); a.href = 'cs_me.html'; }
     else a.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search); });
-  document.body.insertAdjacentHTML('beforeend', (['cs_talk.html','cs_pass.html'].indexOf(on) >= 0 ? '<div class="preview">미리보기 · 준비 중인 화면입니다</div>' : '') +
-    '<footer class="foot wrap"><b>첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.</b><br>' +
-    '위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com<br>' +
-    '<a href="cs_terms.html">이용약관</a> · <b><a href="cs_privacy.html">개인정보처리방침</a></b> · <a href="cs_terms.html#author">작가 약관</a> · <a href="cs_terms.html#refund">취소 · 환불 규정</a></footer>');
+  document.body.insertAdjacentHTML('beforeend', (['cs_talk.html','cs_pass.html'].indexOf(on) >= 0 ? '<div class="preview">' + T('미리보기 · 준비 중인 화면입니다', 'Preview · coming soon') + '</div>' : '') +
+    '<footer class="foot wrap"><b>' + T('첫소절(위브앱솔루션)은 통신판매중개자이며 통신판매의 당사자가 아닙니다. 곡, 곡 정보, 거래에 관한 의무와 책임은 판매자(작가)에게 있습니다.', 'Cheotsojeol (WEAPP Solution) is a marketplace intermediary and is not a party to the sale. The seller (songwriter) is responsible for the songs, song information and transactions.') + '</b><br>' +
+    T('위브앱솔루션 · 대표 이미화 · 사업자등록번호 206-08-71754 · 통신판매업신고 2022-수원권선-1701<br>경기도 수원시 권선구 수성로47 10동 501호 · weapps.kr@gmail.com',
+      'WEAPP Solution · CEO Mihwa Lee · Business reg. 206-08-71754 · Mail-order reg. 2022-Suwon Gwonseon-1701<br>10-501, 47 Suseong-ro, Gwonseon-gu, Suwon, Gyeonggi, Korea · weapps.kr@gmail.com') + '<br>' +
+    '<a href="cs_terms.html">' + T('이용약관', 'Terms') + '</a> · <b><a href="cs_privacy.html">' + T('개인정보처리방침', 'Privacy Policy') + '</a></b> · <a href="cs_terms.html#author">' + T('작가 약관', 'Songwriter Terms') + '</a> · <a href="cs_terms.html#refund">' + T('취소 · 환불 규정', 'Refunds') + '</a></footer>');
 };
 
 /* ── 로그인 · 회원 정보 (Supabase) ── */
@@ -60,7 +69,7 @@ CS.me = function(force){
 CS.esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); };
 CS.needLogin = async function(){
   var m = await CS.me();
-  if (m.user && m.err) { var bx = document.querySelector('main') || document.body; bx.insertAdjacentHTML('afterbegin', '<div class="card" style="margin:24px 0;padding:18px;color:var(--coral);line-height:1.7">회원 정보를 불러오지 못했습니다. 이 화면을 캡처해서 보내 주세요.<br><span class="faint">' + CS.esc(m.err) + '</span></div>'); return null; }
+  if (m.user && m.err) { var bx = document.querySelector('main') || document.body; bx.insertAdjacentHTML('afterbegin', '<div class="card" style="margin:24px 0;padding:18px;color:var(--coral);line-height:1.7">' + CS.T('회원 정보를 불러오지 못했습니다. 이 화면을 캡처해서 보내 주세요.', 'Could not load your account. Please send us a screenshot of this screen.') + '<br><span class="faint">' + CS.esc(m.err) + '</span></div>'); return null; }
   if (!m.user || !m.profile) { location.href = 'cs_login.html?next=' + encodeURIComponent(location.pathname.split('/').pop() + location.search) + '&why=' + (m.user ? 'nick' : 'nosession') + (m.user ? '' : '&ls=' + CS.diag.ls + '&k=' + CS.diag.key + '&ev=' + CS.diag.ev.join('.') + '&t=' + encodeURIComponent(new Date().toISOString().slice(0, 19)) + (m.err ? '&e=' + encodeURIComponent(m.err) : '')); return null; }
   return m;
 };
@@ -78,12 +87,13 @@ CS.fromDb = function(r){
 };
 
 /* ── 꾸미기: 주간 · 야간, 바탕색, 분위기(음표 · 눈 · 비 · 벚꽃 · 별밤 · 크리스마스), 오선지 ── */
+CS.PAL_EN = { navy:'Navy', wine:'Wine', forest:'Forest', violet:'Violet', ink:'Ink', ivory:'Ivory', sky:'Sky', pink:'Blossom', mint:'Mint', white:'Light gray' };
 CS.PAL = {
   dark: { navy:['남색','#0E1020','#171A2E','#1F2340'], wine:['와인','#1A0E14','#26151D','#331C27'], forest:['숲','#0B1613','#13221D','#1A2D27'],
           violet:['보라','#130E22','#1D1633','#271E44'], ink:['먹색','#101010','#1A1A1A','#252525'] },
   light:{ ivory:['아이보리','#EADFC8','#FBF7EE','#E2D6BC'], sky:['하늘','#D9E6F4','#F7FAFE','#CCDCEE'], pink:['벚꽃','#F2DCE1','#FDF6F7','#EACFD6'],
           mint:['민트','#D7EBE1','#F6FBF8','#C8E2D5'], white:['회백색','#E6E6EA','#FAFAFB','#DADADF'] } };
-CS.FX = [['notes','🎵 음표'],['none','없음'],['snow','❄ 눈'],['rain','🌧 비'],['petal','🌸 벚꽃'],['stars','✨ 별밤'],['xmas','🎄 크리스마스']];
+CS.FX = [['notes',CS.T('🎵 음표','🎵 Notes')],['none',CS.T('없음','None')],['snow',CS.T('❄ 눈','❄ Snow')],['rain',CS.T('🌧 비','🌧 Rain')],['petal',CS.T('🌸 벚꽃','🌸 Blossoms')],['stars',CS.T('✨ 별밤','✨ Starry night')],['xmas',CS.T('🎄 크리스마스','🎄 Christmas')]];
 CS.deco = (function(){ var d = { mode:'auto', dark:'navy', light:'ivory', fx:'notes', staff:false }; try { var x = JSON.parse(localStorage.getItem('cs_deco') || '{}'); for (var k in x) d[k] = x[k]; } catch (e) {} return d; })();
 CS.isLight = function(){ return CS.deco.mode === 'light' || (CS.deco.mode === 'auto' && !(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) && (new Date().getHours() >= 7 && new Date().getHours() < 19)); };
 CS.applyDeco = function(){
@@ -151,19 +161,25 @@ CS.fx = (function(){
 /* 꾸미기 창 */
 CS.paintDeco = function(){
   var box = document.getElementById('deco'); if (!box) return; var d = CS.deco, L = CS.isLight(), pal = L ? CS.PAL.light : CS.PAL.dark, cur = L ? d.light : d.dark;
-  box.innerHTML = '<h4>밝기</h4><div class="opts">' + [['auto','🕒 자동'],['light','☀ 주간'],['dark','🌙 야간']].map(function(x){ return '<span class="chip' + (d.mode === x[0] ? ' on' : '') + '" data-m="' + x[0] + '">' + x[1] + '</span>'; }).join('') + '</div>' +
-    '<h4>바탕색 (' + (L ? '주간' : '야간') + ')</h4><div class="opts">' + Object.keys(pal).map(function(k){ return '<span class="sw' + (k === cur ? ' on' : '') + '" title="' + pal[k][0] + '" data-b="' + k + '" style="background:linear-gradient(135deg,' + pal[k][1] + ' 50%,' + pal[k][3] + ' 50%)"></span>'; }).join('') + '</div>' +
-    '<h4>분위기</h4><div class="opts">' + CS.FX.map(function(x){ return '<span class="chip' + (d.fx === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + x[1] + '</span>'; }).join('') + '</div>' +
-    '<h4>배경</h4><div class="opts"><span class="chip' + (d.staff ? ' on' : '') + '" data-s="1">🎼 오선지 무늬</span></div>' +
-    '<div class="hint" style="margin-top:12px">이 기기에만 저장됩니다.' + (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? ' 기기 설정(동작 줄이기) 때문에 움직이는 분위기는 꺼져 있습니다.' : '') + '</div>';
+  var T = CS.T;
+  box.innerHTML = '<h4>' + T('밝기', 'Brightness') + '</h4><div class="opts">' + [['auto',T('🕒 자동','🕒 Auto')],['light',T('☀ 주간','☀ Day')],['dark',T('🌙 야간','🌙 Night')]].map(function(x){ return '<span class="chip' + (d.mode === x[0] ? ' on' : '') + '" data-m="' + x[0] + '">' + x[1] + '</span>'; }).join('') + '</div>' +
+    '<h4>' + T('바탕색', 'Background') + ' (' + (L ? T('주간', 'day') : T('야간', 'night')) + ')</h4><div class="opts">' + Object.keys(pal).map(function(k){ return '<span class="sw' + (k === cur ? ' on' : '') + '" title="' + T(pal[k][0], CS.PAL_EN[k]) + '" data-b="' + k + '" style="background:linear-gradient(135deg,' + pal[k][1] + ' 50%,' + pal[k][3] + ' 50%)"></span>'; }).join('') + '</div>' +
+    '<h4>' + T('분위기', 'Ambience') + '</h4><div class="opts">' + CS.FX.map(function(x){ return '<span class="chip' + (d.fx === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + x[1] + '</span>'; }).join('') + '</div>' +
+    '<h4>' + T('배경', 'Pattern') + '</h4><div class="opts"><span class="chip' + (d.staff ? ' on' : '') + '" data-s="1">' + T('🎼 오선지 무늬', '🎼 Music staff') + '</span></div>' +
+    '<div class="hint" style="margin-top:12px">' + T('이 기기에만 저장됩니다.', 'Saved on this device only.') + (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? T(' 기기 설정(동작 줄이기) 때문에 움직이는 분위기는 꺼져 있습니다.', ' Animations are off because of your device’s Reduce Motion setting.') : '') + '</div>';
   box.querySelectorAll('[data-m]').forEach(function(e){ e.onclick = function(){ d.mode = e.dataset.m; CS.saveDeco(); }; });
   box.querySelectorAll('[data-b]').forEach(function(e){ e.onclick = function(){ if (CS.isLight()) d.light = e.dataset.b; else d.dark = e.dataset.b; CS.saveDeco(); }; });
   box.querySelectorAll('[data-f]').forEach(function(e){ e.onclick = function(){ d.fx = e.dataset.f; CS.saveDeco(); }; });
   box.querySelector('[data-s]').onclick = function(){ d.staff = !d.staff; CS.saveDeco(); };
 };
+CS.staticEn = function(root){ if (CS.lang !== 'en') return; root = root || document;
+  root.querySelectorAll('[data-en]').forEach(function(e){ e.innerHTML = e.getAttribute('data-en'); });
+  root.querySelectorAll('[data-en-ph]').forEach(function(e){ e.placeholder = e.getAttribute('data-en-ph'); });
+  var t = document.querySelector('title[data-en]'); if (t) document.title = t.getAttribute('data-en'); };
 document.addEventListener('DOMContentLoaded', function(){
+  CS.staticEn();
   CS.fx.init(); CS.fx.set(CS.deco.fx);
-  var b = document.createElement('button'); b.className = 'deco-btn'; b.title = '화면 꾸미기'; b.setAttribute('aria-label', '화면 꾸미기'); b.textContent = '🎨';
+  var b = document.createElement('button'); b.className = 'deco-btn'; b.title = CS.T('화면 꾸미기', 'Decorate'); b.setAttribute('aria-label', b.title); b.textContent = '🎨';
   var p = document.createElement('div'); p.className = 'deco'; p.id = 'deco';
   document.body.appendChild(b); document.body.appendChild(p);
   b.onclick = function(e){ e.stopPropagation(); p.classList.toggle('on'); CS.paintDeco(); };
