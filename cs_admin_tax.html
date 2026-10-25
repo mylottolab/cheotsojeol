@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>정산 · 세무 — 첫소절 관리자</title><link rel="stylesheet" href="cs.css?v=20261026b"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026b"></script><script src="cs.js?v=20261026b"></script>
+<title>정산 · 세무 — 첫소절 관리자</title><link rel="stylesheet" href="cs.css?v=20261026c"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026c"></script><script src="cs.js?v=20261026c"></script>
 <style>
 .tabs{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
 .pane{padding:18px;margin-top:14px;overflow-x:auto}
@@ -16,7 +16,7 @@ table.t td.n,table.t th.n{text-align:right}
 </main>
 <script>
 CS.top('cs_admin.html');
-var E = CS.esc, ME, TAB = 'month', AU = [], RATES = [], SET = [], PERIOD;
+var E = CS.esc, ME, TAB = 'pay', PAY = [], AU = [], RATES = [], SET = [], PERIOD;
 var TAX = { business:'사업소득 3.3%', other_income:'기타소득 8.8%', company:'사업자', nonresident:'해외 거주자' };
 var ST = { draft:'계산됨(미확정)', confirmed:'확정 · 지급 예정', paid:'지급 완료', failed:'이체 실패', held:'보류' };
 function $(i){ return document.getElementById(i); }
@@ -32,15 +32,34 @@ function csv(name, rows){
 async function loadAll(){
   var a = await CS.sb.rpc('cs_admin_authors'); AU = a.data || [];
   var r = await CS.sb.from('cs_tax_rates').select('*').order('country'); RATES = r.data || [];
+  var py = await CS.sb.rpc('cs_admin_payments', { p_days: 90 }); PAY = py.data || [];
   var s = await CS.sb.from('cs_settlements').select('*').eq('period', PERIOD + '-01').order('net_krw', { ascending: false }); SET = s.data || [];
   paint();
 }
 function paint(){
   var pend = AU.filter(function(a){ return a.tax_status === 'pending'; }).length, tp = AU.filter(function(a){ return a.treaty_status === 'pending'; }).length;
-  $('app').innerHTML = '<div class="tabs">' + [['month','월 정산'],['tax','소득 구분 승인' + (pend ? ' ' + pend : '')],['nr','해외 작가 서류' + (tp ? ' ' + tp : '')],['rate','나라별 세율표'],['all','작가 세무 정보']].map(function(t){ return '<span class="chip' + (t[0] === TAB ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>' +
-    '<div class="card pane">' + ({ month: paneMonth, tax: paneTax, nr: paneNR, rate: paneRate, all: paneAll })[TAB]() + '<div class="err" id="err"></div></div>';
+  $('app').innerHTML = '<div class="tabs">' + [['pay','결제 · 환불'],['month','월 정산'],['tax','소득 구분 승인' + (pend ? ' ' + pend : '')],['nr','해외 작가 서류' + (tp ? ' ' + tp : '')],['rate','나라별 세율표'],['all','작가 세무 정보']].map(function(t){ return '<span class="chip' + (t[0] === TAB ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>' +
+    '<div class="card pane">' + ({ pay: panePay, month: paneMonth, tax: paneTax, nr: paneNR, rate: paneRate, all: paneAll })[TAB]() + '<div class="err" id="err"></div></div>';
   document.querySelectorAll('.chip[data-t]').forEach(function(c){ c.onclick = function(){ TAB = c.dataset.t; paint(); }; });
-  ({ month: bindMonth, tax: bindTax, nr: bindNR, rate: bindRate, all: function(){} })[TAB]();
+  ({ pay: bindPay, month: bindMonth, tax: bindTax, nr: bindNR, rate: bindRate, all: function(){} })[TAB]();
+}
+/* ── 결제 · 환불 ── */
+var PUR = { pass7:'청취권 7일', pass15:'청취권 15일', pass30:'청취권 30일', download:'다운로드' }, CH = { card:'카드', paypal:'PayPal', apple:'App Store', google:'Google Play' };
+function panePay(){
+  var paid = PAY.filter(function(p){ return p.status === 'paid'; });
+  return '<div class="note" style="margin-bottom:8px">최근 90일 결제입니다. 환불 순서: <b>① 이니시스 상점관리자(또는 PayPal)에서 결제 취소 → ② 여기서 [환불 처리]</b>. 환불 처리하면 그 청취권이 바로 끝나고 작가 정산에서도 빠집니다. 「환불 대상」은 결제 7일 안이고 그 뒤로 한 곡도 재생하지 않은 건입니다(약관). 앱스토어 · 플레이 결제는 손님이 스토어에서 환불받습니다.</div>' +
+    '<div class="note">합계: ' + paid.length + '건 · ' + n(paid.reduce(function(a, p){ return a + p.amount_krw; }, 0)) + '원</div>' +
+    (PAY.length ? '<table class="t"><tr><th>결제 시각</th><th>손님</th><th>상품</th><th class="n">금액</th><th>방법</th><th>청취권 끝</th><th>결제 뒤 재생</th><th>상태</th><th></th></tr>' +
+      PAY.map(function(p){ return '<tr><td>' + p.created_at.slice(0, 16).replace('T', ' ') + '</td><td>' + E(p.nickname || '—') + '<br><span class="faint">' + E(p.email || '') + '</span></td><td>' + (PUR[p.purpose] || p.purpose) + '</td><td class="n">' + n(p.amount_krw) + '</td><td>' + (CH[p.channel] || p.channel) + '</td><td>' + (p.pass_end || '').slice(0, 10) + '</td><td>' + (p.played_after ? '<span class="tag coral">있음</span>' : '없음') + '</td>' +
+        '<td>' + (p.status === 'paid' ? (p.refundable ? '<span class="tag mint">환불 대상</span>' : '결제') : '<span class="tag">환불됨</span>') + '<br><span class="faint" style="font-size:11px">' + E(p.order_id) + '</span></td><td>' + (p.status === 'paid' ? '<button class="btn mini" data-rf="' + E(p.order_id) + '" data-ok="' + (p.refundable ? 1 : 0) + '">환불 처리</button>' : '') + '</td></tr>'; }).join('') + '</table>' : '<p class="muted">최근 결제가 없습니다.</p>');
+}
+function bindPay(){
+  document.querySelectorAll('[data-rf]').forEach(function(b){ b.onclick = async function(){
+    var warn = b.dataset.ok === '1' ? '' : '\n\n⚠ 약관상 환불 대상이 아닙니다(7일이 지났거나 결제 뒤 재생함). 그래도 처리할까요?';
+    if (!confirm('이니시스(또는 PayPal)에서 결제를 먼저 취소하셨나요?\n이 결제를 「환불」로 바꾸고 청취권을 바로 끝냅니다.' + warn)) return;
+    var note = prompt('환불 메모(선택):', '') ; if (note === null) return;
+    var r = await CS.sb.rpc('cs_admin_refund', { p_order: b.dataset.rf, p_note: note || null }), d = r.data || {};
+    if (r.error || !d.ok) return msg('처리하지 못했습니다: ' + (r.error ? r.error.message : d.error)); loadAll(); }; });
 }
 /* ── 월 정산 ── */
 function paneMonth(){
