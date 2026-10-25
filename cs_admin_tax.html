@@ -22,7 +22,7 @@ var ST = { draft:'계산됨(미확정)', confirmed:'확정 · 지급 예정', pa
 function $(i){ return document.getElementById(i); }
 function msg(t, ok){ var e = $('err'); if (e) { e.textContent = t || ''; e.className = 'err' + (ok ? ' ok' : ''); } }
 function n(x){ return (+x || 0).toLocaleString(); }
-function lastMonth(){ var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); }
+function lastMonth(){ var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }   // 한국 시간 기준
 PERIOD = lastMonth();
 async function signed(p){ if (!p) return null; var r = await CS.sb.storage.from('cs-audio').createSignedUrl(p, 600); return r.data ? r.data.signedUrl : null; }
 function csv(name, rows){
