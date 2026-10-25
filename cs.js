@@ -81,8 +81,8 @@ CS.fromDb = function(r){
 CS.PAL = {
   dark: { navy:['남색','#0E1020','#171A2E','#1F2340'], wine:['와인','#1A0E14','#26151D','#331C27'], forest:['숲','#0B1613','#13221D','#1A2D27'],
           violet:['보라','#130E22','#1D1633','#271E44'], ink:['먹색','#101010','#1A1A1A','#252525'] },
-  light:{ ivory:['아이보리','#F6F2E9','#FFFDF8','#EFE9DC'], sky:['하늘','#EDF3FA','#FFFFFF','#E2EBF5'], pink:['벚꽃','#FAEFF1','#FFFFFF','#F3E1E5'],
-          mint:['민트','#ECF6F1','#FFFFFF','#DDEEE6'], white:['흰색','#F7F7F8','#FFFFFF','#ECECEF'] } };
+  light:{ ivory:['아이보리','#EADFC8','#FBF7EE','#E2D6BC'], sky:['하늘','#D9E6F4','#F7FAFE','#CCDCEE'], pink:['벚꽃','#F2DCE1','#FDF6F7','#EACFD6'],
+          mint:['민트','#D7EBE1','#F6FBF8','#C8E2D5'], white:['회백색','#E6E6EA','#FAFAFB','#DADADF'] } };
 CS.FX = [['notes','🎵 음표'],['none','없음'],['snow','❄ 눈'],['rain','🌧 비'],['petal','🌸 벚꽃'],['stars','✨ 별밤'],['xmas','🎄 크리스마스']];
 CS.deco = (function(){ var d = { mode:'auto', dark:'navy', light:'ivory', fx:'notes', staff:false }; try { var x = JSON.parse(localStorage.getItem('cs_deco') || '{}'); for (var k in x) d[k] = x[k]; } catch (e) {} return d; })();
 CS.isLight = function(){ return CS.deco.mode === 'light' || (CS.deco.mode === 'auto' && !(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) && (new Date().getHours() >= 7 && new Date().getHours() < 19)); };
@@ -94,7 +94,7 @@ CS.applyDeco = function(){
   st.setProperty('--line', L ? 'rgba(20,20,40,.12)' : 'rgba(255,255,255,.10)');
   st.setProperty('--text', L ? '#1B1C24' : '#EEF0F7'); st.setProperty('--dim', L ? '#4E5266' : '#A9AFC6'); st.setProperty('--faint', L ? '#80849A' : '#7A809A');
   st.setProperty('--gold', L ? '#B9862C' : '#E8B65A'); st.setProperty('--mint', L ? '#2E9A6E' : '#7FD8B0'); st.setProperty('--violet', L ? '#6D5BE0' : '#9C8CFF'); st.setProperty('--coral', L ? '#E0603E' : '#F07A5A');
-  st.setProperty('--staff', L ? 'rgba(60,50,30,.07)' : 'rgba(232,182,90,.07)');
+  st.setProperty('--staff', L ? 'rgba(70,55,30,.20)' : 'rgba(232,182,90,.16)');
   if (CS.fx) CS.fx.set(CS.deco.fx);
 };
 CS.saveDeco = function(){ try { localStorage.setItem('cs_deco', JSON.stringify(CS.deco)); } catch (e) {} CS.applyDeco(); CS.paintDeco(); };
