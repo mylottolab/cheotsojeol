@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261026b"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026b"></script><script src="cs.js?v=20261026b"></script>
+<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261026c"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026c"></script><script src="cs.js?v=20261026c"></script>
 <style>
 .plans{display:grid;grid-template-columns:repeat(3,1fr);max-width:1000px;gap:14px;margin-top:18px}
 .plan{cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -39,28 +39,28 @@
 </main>
 <script>CS.top('cs_pass.html');
 var T = CS.T, PRICE = { '7d': T('1,100원 · 7일', '₩1,100 · 7 days'), '15d': T('2,200원 · 15일', '₩2,200 · 15 days'), '30d': T('3,300원 · 30일', '₩3,300 · 30 days') }, sel = '30d', ME = null;
-function $(i){ return document.getElementById(i); }
-function hint(t, bad){ var m = $('mh'); if (m && $('buyer').style.display !== 'none') { m.textContent = t || ''; return; } $('buyh').innerHTML = t ? '<b style="color:' + (bad ? 'var(--coral)' : 'var(--gold)') + '">' + CS.esc(t) + '</b>' : ''; }
-function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); $('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
+function byId(i){ return document.getElementById(i); }   // ⚠ $ 는 이니시스 결제 스크립트(jQuery)가 덮어써서 쓰지 않습니다
+function hint(t, bad){ var m = byId('mh'); if (m && byId('buyer').style.display !== 'none') { m.textContent = t || ''; return; } byId('buyh').innerHTML = t ? '<b style="color:' + (bad ? 'var(--coral)' : 'var(--gold)') + '">' + CS.esc(t) + '</b>' : ''; }
+function pick(k){ sel = k; document.querySelectorAll('.plan').forEach(function(p){ p.classList.toggle('best', p.dataset.k === k); }); byId('buy').textContent = T('선택한 청취권 구매하기 — ', 'Buy selected pass — ') + PRICE[k]; }
 document.getElementById('plans').addEventListener('click', function(e){ var p = e.target.closest('.plan'); if (p) pick(p.dataset.k); });
 /* 이니시스 SDK 는 미리 받아 둡니다(클릭 뒤에 받으면 팝업 차단으로 오인) */
 var iniP = null;
 function loadIni(){ if (window.INIPayPro) return Promise.resolve(); if (iniP) return iniP; iniP = new Promise(function(ok, no){ var s = document.createElement('script'); s.src = 'https://paypro.inicis.com/std/payment/js/INIPayPro_v2.js'; s.charset = 'UTF-8'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); return iniP; }
 loadIni().catch(function(){});
-$('buy').onclick = function(){
+byId('buy').onclick = function(){
   if (!ME || !ME.user) { location.href = 'cs_login.html?next=cs_pass.html'; return; }
-  $('bTitle').textContent = T('청취권 ', 'Pass ') + PRICE[sel]; $('mh').textContent = '';
-  $('buyer').style.display = ''; $('dim').style.display = ''; if (!$('bname').value) $('bname').value = ME.profile ? ME.profile.nickname : '';
+  byId('bTitle').textContent = T('청취권 ', 'Pass ') + PRICE[sel]; byId('mh').textContent = '';
+  byId('buyer').style.display = ''; byId('dim').style.display = ''; if (!byId('bname').value) byId('bname').value = ME.profile ? ME.profile.nickname : '';
 };
-function closeBuy(){ $('buyer').style.display = 'none'; $('dim').style.display = 'none'; $('ppWrap').style.display = 'none'; }
-$('bClose').onclick = closeBuy; $('dim').onclick = closeBuy;
-$('goCard').onclick = async function(){
+function closeBuy(){ byId('buyer').style.display = 'none'; byId('dim').style.display = 'none'; byId('ppWrap').style.display = 'none'; }
+byId('bClose').onclick = closeBuy; byId('dim').onclick = closeBuy;
+byId('goCard').onclick = async function(){
   hint('');
-  var name = $('bname').value.trim(); if (!name) return hint(T('이름을 넣어 주세요.', 'Please enter a name.'), true);
-  if (!$('bagree').checked) return hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true);
+  var name = byId('bname').value.trim(); if (!name) return hint(T('이름을 넣어 주세요.', 'Please enter a name.'), true);
+  if (!byId('bagree').checked) return hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true);
   var b = this; b.disabled = true;
   try {
-    var r = await CS.sb.functions.invoke('cs-inicis-prepare', { body: { purpose: 'pass' + sel.replace('d', ''), buyername: name, buyertel: $('btel').value.trim() } });
+    var r = await CS.sb.functions.invoke('cs-inicis-prepare', { body: { purpose: 'pass' + sel.replace('d', ''), buyername: name, buyertel: byId('btel').value.trim() } });
     var d = r.data || {}; if (r.error || d.error) throw new Error(d.error || (r.error && r.error.message) || 'error');
     await loadIni(); if (!window.INIPayPro || !window.INIPayPro.requestPayment) throw new Error(T('결제창을 불러오지 못했습니다. 새로고침 후 다시 해 주세요.', 'Could not load the payment window. Refresh and try again.'));
     window.INIPayPro.requestPayment({ P_MID: d.mid, P_OID: d.oid, P_PAY_TYPE: 'CARD', P_DEVICE_TYPE: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'MOBILE' : 'WEB', P_IDCCODE: 'Y',
@@ -78,24 +78,24 @@ async function loadPayPal(){
   ppReady = true; return true;
 }
 async function showPayPal(){
-  var k = 'pass' + sel.replace('d', ''); if (!USD[k]) { $('ppWrap').style.display = 'none'; return; }
+  var k = 'pass' + sel.replace('d', ''); if (!USD[k]) { byId('ppWrap').style.display = 'none'; return; }
   try { if (!await loadPayPal()) return; } catch (e) { return; }
-  $('ppWrap').style.display = ''; $('ppLabel').textContent = T('해외 카드 · PayPal: US$', 'International card / PayPal: US$') + USD[k]; $('ppBox').innerHTML = '';
+  byId('ppWrap').style.display = ''; byId('ppLabel').textContent = T('해외 카드 · PayPal: US$', 'International card / PayPal: US$') + USD[k]; byId('ppBox').innerHTML = '';
   window.paypal.Buttons({ style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
-    onClick: function(){ if (!$('bagree').checked) { hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true); return false; } },
+    onClick: function(){ if (!byId('bagree').checked) { hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true); return false; } },
     createOrder: async function(){ var r = await CS.sb.functions.invoke('cs-paypal-create', { body: { purpose: 'pass' + sel.replace('d', '') } }); var d = r.data || {}; if (!d.id) throw new Error(d.error || 'PayPal error'); return d.id; },
     onApprove: async function(data){ var r = await CS.sb.functions.invoke('cs-paypal-capture', { body: { orderID: data.orderID } }); var d = r.data || {};
       location.href = 'cs_pay_result.html?status=' + (d.status === 'success' ? 'success' : 'fail') + '&orderId=' + encodeURIComponent(d.orderId || '') + (d.error ? '&msg=' + encodeURIComponent(d.error) : ''); },
     onError: function(e){ hint(T('PayPal 결제를 끝내지 못했습니다: ', 'PayPal payment failed: ') + (e && e.message || e), true); }
   }).render('#ppBox');
 }
-var _pick = pick; pick = function(k){ _pick(k); if ($('buyer').style.display !== 'none') showPayPal(); };
-var _buy = $('buy').onclick; $('buy').onclick = function(){ _buy(); if (ME && ME.user) showPayPal(); };
+var _pick = pick; pick = function(k){ _pick(k); if (byId('buyer').style.display !== 'none') showPayPal(); };
+var _buy = byId('buy').onclick; byId('buy').onclick = function(){ _buy(); if (ME && ME.user) showPayPal(); };
 pick('30d');
 CS.sb && CS.sb.from('cs_prices').select('purpose,amount_usd').then(function(r){ (r.data || []).forEach(function(p){ if (p.amount_usd) USD[p.purpose] = (+p.amount_usd).toFixed(2); }); });
 (async function(){
   ME = await CS.me(); if (!ME.user) return;
   var p = await CS.sb.from('cs_passes').select('kind,ends_at').gte('ends_at', new Date().toISOString()).order('ends_at', { ascending: false }).limit(1);
-  if (p.data && p.data[0]) $('mypass').innerHTML = '✅ ' + T('지금 청취권이 있습니다 · <b>' + p.data[0].ends_at.slice(0, 10) + '</b>까지. 더 사면 그 뒤로 이어집니다.', 'You have an active pass until <b>' + p.data[0].ends_at.slice(0, 10) + '</b>. A new pass starts after it ends.');
+  if (p.data && p.data[0]) byId('mypass').innerHTML = '✅ ' + T('지금 청취권이 있습니다 · <b>' + p.data[0].ends_at.slice(0, 10) + '</b>까지. 더 사면 그 뒤로 이어집니다.', 'You have an active pass until <b>' + p.data[0].ends_at.slice(0, 10) + '</b>. A new pass starts after it ends.');
 })();
 </script></body></html>
