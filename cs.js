@@ -1,5 +1,10 @@
 /* 첫소절 — 미리보기용 공용 스크립트 (보기 자료 · 진짜 음원 없음) */
 var CS = {};
+/* 화면 오류를 눈에 보이게(원격 확인용) — 빨간 띠를 누르면 닫힙니다 */
+CS.errs = [];
+window.addEventListener('error', function(e){ CS.showErr((e.message || 'error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
+window.addEventListener('unhandledrejection', function(e){ var r = e.reason; CS.showErr('promise: ' + (r && (r.message || r.error_description) || String(r)).slice(0, 160)); });
+CS.showErr = function(m){ CS.errs.push(m); try { var d = document.getElementById('csErr'); if (!d) { d = document.createElement('div'); d.id = 'csErr'; d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:64px;z-index:99;background:#B3261E;color:#fff;font:12px/1.5 monospace;padding:8px 10px;border-radius:8px;white-space:pre-wrap;max-height:30vh;overflow:auto'; d.onclick = function(){ d.remove(); }; (document.body || document.documentElement).appendChild(d); } d.textContent = '⚠ ' + CS.errs.slice(-4).join('\n⚠ '); } catch (x) {} };
 /* ── 언어(한국어 / English) ── */
 CS.lang = (function(){ try { var v = localStorage.getItem('cs_lang'); if (v === 'ko' || v === 'en') return v; } catch (e) {} return /^ko/i.test(navigator.language || 'ko') ? 'ko' : 'en'; })();
 document.documentElement.lang = CS.lang;
