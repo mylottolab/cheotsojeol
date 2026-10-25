@@ -94,7 +94,7 @@ CS.applyDeco = function(){
   st.setProperty('--line', L ? 'rgba(20,20,40,.12)' : 'rgba(255,255,255,.10)');
   st.setProperty('--text', L ? '#1B1C24' : '#EEF0F7'); st.setProperty('--dim', L ? '#4E5266' : '#A9AFC6'); st.setProperty('--faint', L ? '#80849A' : '#7A809A');
   st.setProperty('--gold', L ? '#B9862C' : '#E8B65A'); st.setProperty('--mint', L ? '#2E9A6E' : '#7FD8B0'); st.setProperty('--violet', L ? '#6D5BE0' : '#9C8CFF'); st.setProperty('--coral', L ? '#E0603E' : '#F07A5A');
-  st.setProperty('--staff', L ? 'rgba(70,55,30,.20)' : 'rgba(232,182,90,.16)');
+  st.setProperty('--staff', L ? 'rgba(70,55,30,.20)' : 'rgba(232,182,90,.32)');
   if (CS.fx) CS.fx.set(CS.deco.fx);
 };
 CS.saveDeco = function(){ try { localStorage.setItem('cs_deco', JSON.stringify(CS.deco)); } catch (e) {} CS.applyDeco(); CS.paintDeco(); };
@@ -106,14 +106,14 @@ CS.fx = (function(){
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function R(a, b){ return a + Math.random() * (b - a); }
   function size(){ W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0); }
-  function count(){ var a = W * H / 1e4; return Math.round(Math.min(140, a * ({ snow:.55, rain:.9, petal:.25, stars:1.1, xmas:.5, notes:.12 })[kind])) || 0; }
+  function count(){ var a = W * H / 1e4; return Math.round(Math.min(140, a * ({ snow:.55, rain:.9, petal:.25, stars:1.1, xmas:.5, notes:.18 })[kind])) || 0; }
   function make(init){
     var L = CS.isLight(), o = { x: R(0, W), y: init ? R(0, H) : -20 };
     if (kind === 'snow' || kind === 'xmas') { o.r = R(1, 3.4); o.vy = R(.3, 1.1); o.vx = R(-.3, .3); o.ph = R(0, 6); o.c = L ? 'rgba(150,170,200,' : 'rgba(255,255,255,'; o.a = R(.4, .9); }
     else if (kind === 'rain') { o.l = R(10, 22); o.vy = R(7, 12); o.vx = -1.6; o.a = R(.15, .4); o.c = L ? 'rgba(70,100,150,' : 'rgba(170,200,255,'; }
     else if (kind === 'petal') { o.r = R(4, 8); o.vy = R(.5, 1.3); o.vx = R(.2, 1); o.rot = R(0, 6); o.vr = R(-.03, .03); o.ph = R(0, 6); o.a = R(.55, .9); }
     else if (kind === 'stars') { o.y = R(0, H); o.r = R(.4, 1.6); o.ph = R(0, 6); o.sp = R(.01, .04); }
-    else if (kind === 'notes') { o.y = init ? R(0, H) : H + 30; o.g = '♪♫♩♬𝄞'[Math.floor(R(0, 4.99))]; o.s = R(16, 34); o.vy = -R(.2, .5); o.ph = R(0, 6); o.a = R(.08, .2); o.rot = R(-.3, .3); }
+    else if (kind === 'notes') { o.y = init ? R(0, H) : H + 30; o.g = ['♪','♫','♩','♬','𝄞','♪','♫'][Math.floor(R(0, 6.99))]; o.s = R(18, 38); o.vy = -R(.2, .5); o.ph = R(0, 6); o.a = L ? R(.14, .3) : R(.3, .6); o.rot = R(-.3, .3); }
     return o;
   }
   var bulbs = [], shoot = null;
