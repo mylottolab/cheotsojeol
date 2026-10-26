@@ -1,0 +1,11 @@
+{
+  "name": "cheotsojeol-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "첫소절 아이폰 앱 껍데기 (cheotsojeol.com 화면을 띄웁니다)",
+  "dependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/ios": "^8.5.1"
+  }
+}

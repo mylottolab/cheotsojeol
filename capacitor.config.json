@@ -1,0 +1,22 @@
+{
+  "appId": "com.weaveapp.cheotsojeol",
+  "appName": "첫소절",
+  "webDir": "www",
+  "server": {
+    "url": "https://cheotsojeol.com/",
+    "cleartext": false,
+    "allowNavigation": [
+      "cheotsojeol.com",
+      "www.cheotsojeol.com",
+      "ztzzricoobgalbdwacyl.supabase.co",
+      "*.supabase.co"
+    ]
+  },
+  "appendUserAgent": "CheotsojeolApp",
+  "backgroundColor": "#14172e",
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true
+  }
+}
