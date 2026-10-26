@@ -15,7 +15,7 @@
   "appendUserAgent": "CheotsojeolApp",
   "backgroundColor": "#14172e",
   "ios": {
-    "contentInset": "always",
+    "contentInset": "never",
     "allowsLinkPreview": false,
     "scrollEnabled": true
   }
