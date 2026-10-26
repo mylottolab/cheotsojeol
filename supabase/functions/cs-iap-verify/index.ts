@@ -85,17 +85,28 @@ Deno.serve(async (req) => {
     if (apple) {
       const id = ext.slice(6), bearer = await appleJwt();
       let r: Response | null = null, env = 'Production';
-      for (const host of ['https://api.storekit.itunes.apple.com', 'https://api.storekit-sandbox.itunes.apple.com']) {
-        r = await fetch(host + '/inApps/v1/transactions/' + id, { headers: { Authorization: 'Bearer ' + bearer } });
-        if (r.status !== 404) break; env = 'Sandbox';
+      const ask = async (b: string) => {
+        for (const host of ['https://api.storekit.itunes.apple.com', 'https://api.storekit-sandbox.itunes.apple.com']) {
+          env = host.includes('sandbox') ? 'Sandbox' : 'Production';
+          r = await fetch(host + '/inApps/v1/transactions/' + id, { headers: { Authorization: 'Bearer ' + b } });
+          if (r.status !== 404) break;
+        }
+      };
+      await ask(bearer);
+      if (r && (r as Response).status === 401) { aJwt = null; await ask(await appleJwt()); }   // 열쇠를 바꾼 직후 — 새 출입증으로 한 번 더
+      if (!r || !(r as Response).ok) {
+        const st = r ? (r as Response).status : 0, t = r ? (await (r as Response).text()).slice(0, 200) : '';
+        const kid = (Deno.env.get('APPLE_IAP_KEY_ID') || '').replace(/[^A-Za-z0-9]/g, ''), iss = (Deno.env.get('APPLE_IAP_ISSUER_ID') || '').replace(/[^A-Za-z0-9-]/g, '');
+        console.error('[cs-iap-verify] 애플 확인 실패', st, env, t, 'kid=' + kid, 'iss=' + iss.slice(0, 8));
+        const hint = st === 401 ? ' — 키 ID(' + kid + ', ' + kid.length + '자) · Issuer ID(' + iss.slice(0, 8) + '…, ' + iss.length + '자) · .p8 이 같은 키인지 확인' : '';
+        return J({ ok: false, error: '애플 확인 실패 ' + st + ' ' + env + hint + (t ? ' ' + t : '') }, 502);
       }
-      if (!r || !r.ok) { const t = r ? (await r.text()).slice(0, 300) : ''; console.error('[cs-iap-verify] 애플 확인 실패', r?.status, t); return J({ ok: false, error: '애플 확인 실패 ' + (r?.status || '') }, 502); }
-      const tx = jwsPayload((await r.json()).signedTransactionInfo);
+      const tx = jwsPayload((await (r as Response).json()).signedTransactionInfo);
       if (tx.bundleId !== APP_ID) return J({ ok: false, error: '다른 앱의 결제입니다' }, 400);
       if (tx.productId !== sku) return J({ ok: false, error: '상품 번호가 다릅니다' }, 400);
       if (String(tx.appAccountToken || '').toLowerCase() !== uid.toLowerCase()) return J({ ok: false, error: '다른 계정으로 산 결제입니다' }, 403);
       if (tx.revocationDate) return J({ ok: false, canceled: true, finish: true, error: '취소 · 환불된 결제입니다' });
-      order = 'APL_' + tx.transactionId; raw = { store: 'apple', env, tx: tx.transactionId, original: tx.originalTransactionId, product: tx.productId, price: tx.price, currency: tx.currency, storefront: tx.storefront };
+      order = 'APL_' + tx.transactionId; raw = { store: 'apple', env: env, tx: tx.transactionId, original: tx.originalTransactionId, product: tx.productId, price: tx.price, currency: tx.currency, storefront: tx.storefront };
     } else {
       const bearer = await googleToken();
       const url = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + APP_ID + '/purchases/products/' + encodeURIComponent(sku) + '/tokens/' + encodeURIComponent(token);
