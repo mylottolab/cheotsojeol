@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>심사함 — 첫소절 관리자</title><link rel="stylesheet" href="cs.css?v=20261026f"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026f"></script><script src="cs.js?v=20261026f"></script>
+<title>심사함 — 첫소절 관리자</title><link rel="stylesheet" href="cs.css?v=20261027b"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261027b"></script><script src="cs.js?v=20261027b"></script>
 <style>
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
 .kpis .card{padding:14px}.kpis b{display:block;font-size:24px;margin-top:4px}
@@ -26,6 +26,7 @@ CS.top('cs_admin.html');
 var E = CS.esc, ME, TAB = 'wait', SONGS = [], REPORTS = [], CUR = null;
 var ST = { submitted:['접수','gold'], auto_checked:['자동 판별 끝','gold'], in_review:['심사 중','violet'], needs_fix:['보완 요청','coral'], rejected:['반려','coral'], listed:['공개 중','mint'], paused:['잠시 숨김','coral'], sold:['거래 완료','mint'] };
 var GROUP = { wait:['submitted','auto_checked','in_review','needs_fix'], live:['listed'], off:['paused','rejected','sold'] };
+var UK = { normal:'일반(기간 끝나는 날 자동)', legal:'예외 — 법령 위반 우려', dispute:'예외 — 권리 분쟁', other:'예외 — 부득이한 사유' };
 var ROLE = { lyrics_music:'작사 · 작곡', lyrics:'작사', music:'작곡', arrange:'편곡' }, MODE = { transfer:'양도', exclusive:'독점 이용허락', nonexclusive:'비독점 이용허락' };
 var TAX = { business:'사업소득 3.3%', other_income:'기타소득 8.8%', company:'사업자(세금계산서)', nonresident:'해외 거주자' }, KIND = { plagiarism:'표절', rights:'권리 침해', other:'기타' };
 function $(i){ return document.getElementById(i); }
@@ -34,7 +35,8 @@ function d(t){ return t ? t.slice(5, 10).replace('-', '.') : ''; }
 function tag(st){ var x = ST[st] || [st, '']; return '<span class="tag ' + x[1] + '">' + x[0] + '</span>'; }
 
 async function load(){
-  var r = await CS.sb.from('cs_songs').select('id,title,genre,length_sec,status,created_at,listed_at,author_id,cs_authors(display_name)').order('created_at', { ascending: false }).limit(300);
+  CS.sb.rpc('cs_unlist_due_run').then(function(){});   // 내리기 예약일이 지난 곡 정리(자동 작업의 보조)
+  var r = await CS.sb.from('cs_songs').select('id,title,genre,length_sec,status,created_at,listed_at,author_id,unlist_requested_at,unlist_due,unlist_kind,cs_authors(display_name)').order('created_at', { ascending: false }).limit(300);
   SONGS = r.data || [];
   var q = await CS.sb.from('cs_reports').select('id,song_id,kind,detail,status,created_at').in('status', ['open','author_reply']).order('created_at');
   REPORTS = q.data || [];
@@ -43,9 +45,10 @@ async function load(){
 function paint(){
   var n = function(g){ return SONGS.filter(function(s){ return GROUP[g].indexOf(s.status) >= 0; }).length; };
   var month = new Date().toISOString().slice(0, 7);
-  var L = TAB === 'rep' ? [] : SONGS.filter(function(s){ return GROUP[TAB].indexOf(s.status) >= 0; });
+  var DOWN = SONGS.filter(function(s){ return s.status === 'listed' && s.unlist_requested_at; });
+  var L = TAB === 'rep' ? [] : TAB === 'down' ? DOWN : SONGS.filter(function(s){ return GROUP[TAB].indexOf(s.status) >= 0; });
   $('app').innerHTML = '<div class="kpis"><div class="card faint">심사 대기<b style="color:var(--text)">' + n('wait') + '</b></div><div class="card faint">열린 신고<b style="color:' + (REPORTS.length ? 'var(--coral)' : 'var(--text)') + '">' + REPORTS.length + '</b></div><div class="card faint">공개 중<b style="color:var(--mint)">' + n('live') + '</b></div><div class="card faint">이번 달 공개<b style="color:var(--text)">' + SONGS.filter(function(s){ return (s.listed_at || '').slice(0, 7) === month; }).length + '</b></div></div>' +
-    '<div class="tabs">' + [['wait','심사 대기 ' + n('wait')],['live','공개 중 ' + n('live')],['off','숨김 · 반려 ' + n('off')],['rep','신고 ' + REPORTS.length]].map(function(t){ return '<span class="chip' + (t[0] === TAB ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>' +
+    '<div class="tabs">' + [['wait','심사 대기 ' + n('wait')],['live','공개 중 ' + n('live')],['off','숨김 · 반려 ' + n('off')],['rep','신고 ' + REPORTS.length],['down','내림 요청 ' + DOWN.length]].map(function(t){ return '<span class="chip' + (t[0] === TAB ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</span>'; }).join('') + '</div>' +
     '<div class="rv"><div class="card" style="padding:6px 8px;overflow-x:auto">' + (TAB === 'rep' ? repList() :
       (L.length ? '<table class="t"><tr><th>곡</th><th>작가</th><th>상태</th><th>신청일</th></tr>' + L.map(function(s){ return '<tr class="pick' + (CUR && CUR.song.id === s.id ? ' on' : '') + '" data-id="' + s.id + '"><td><b>' + E(s.title) + '</b><br><span class="faint">' + E(s.genre) + ' · ' + tm(s.length_sec) + '</span></td><td>' + E(s.cs_authors ? s.cs_authors.display_name : '') + '</td><td>' + tag(s.status) + '</td><td>' + d(s.created_at) + '</td></tr>'; }).join('') + '</table>' : '<p class="faint" style="padding:18px">여기에 해당하는 곡이 없습니다.</p>')) +
     '</div><div class="card det" style="padding:18px" id="det">' + (CUR ? detail() : '<span class="faint">왼쪽에서 곡을 고르세요.</span>') + '</div></div>';
@@ -100,6 +103,8 @@ function detail(){
       '<label class="f">심사 의견 (보완 · 반려는 사유가 작가에게 그대로 전달됩니다)</label><textarea class="in" id="cm" maxlength="2000">' + E(mine.comment || '') + '</textarea>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px"><button class="btn gold" data-dec="list">등록</button><button class="btn" data-dec="fix">보완 요청</button><button class="btn coral" data-dec="reject">반려</button></div>' +
       '<div class="hint">' + (admin ? '관리자가 「등록」을 누르면 바로 공개됩니다.' : '심사위원 2명이 「등록」하면 공개됩니다.') + '</div>' : '') +
+    (s.status === 'listed' && s.unlist_requested_at ? '<h4>작가의 내림 요청</h4><div class="box2" style="border-color:var(--coral)">' + UK[s.unlist_kind] + ' · 요청 ' + d(s.unlist_requested_at) + ' · 자동 내림 예정 ' + (s.unlist_due || '').slice(0, 10) + (s.unlist_reason ? '<br><span class="muted">' + E(s.unlist_reason) + '</span>' : '') +
+      (s.unlist_kind !== 'normal' ? '<br><span class="faint">예외 사유가 맞으면 아래 「공개 내리기」로 바로 내려 주세요. 아니면 그대로 두면 예정일에 내려갑니다.</span>' : '') + '</div>' : '') +
     (admin && s.status === 'listed' ? '<h4>공개 관리</h4><button class="btn coral" id="off" style="width:100%">공개 내리기 (잠시 숨김)</button>' : '') +
     (admin && (s.status === 'paused' || s.status === 'rejected') ? '<h4>공개 관리</h4><button class="btn gold" id="on" style="width:100%">다시 공개하기</button>' : '') +
     '<div class="err" id="err"></div>';

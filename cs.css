@@ -89,3 +89,6 @@ html[data-mode=light] .preview{box-shadow:0 6px 18px rgba(0,0,0,.15)}
 /* 아이폰 앱 · 노치폰: 위 띠가 시계 · 배터리 줄까지 덮고, 아래는 홈 막대만큼 띄움 (2026-10-26) */
 .top{padding-top:env(safe-area-inset-top,0px)}
 body{padding-bottom:env(safe-area-inset-bottom,0px)}
+/* 공용 작은 창 */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .card{max-width:460px;width:100%;padding:22px}

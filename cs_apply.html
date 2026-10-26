@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title data-en="Submit a song — Cheotsojeol">곡 등록 신청 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261027a"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261027a"></script><script src="cs.js?v=20261027a"></script>
+<title data-en="Submit a song — Cheotsojeol">곡 등록 신청 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261027b"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261027b"></script><script src="cs.js?v=20261027b"></script>
 <style>
 .stepper{display:flex;gap:6px;margin:20px 0 6px;flex-wrap:wrap}
 .stepper span{padding:7px 12px;border-radius:999px;font-size:13px;font-weight:800;background:var(--panel);color:var(--faint);border:1px solid var(--line)}
@@ -46,10 +46,47 @@ function bindFile(id, key, max, cb){ var e = $(id); if (!e) return; e.onchange =
 
 /* ── 내 신청곡 ── */
 async function loadMine(){
-  var r = await CS.sb.from('cs_songs').select('id,title,status,reject_reason,created_at').eq('author_id', ME.user.id).order('created_at', { ascending: false });
-  var L = r.data || [];
+  var r = await CS.sb.from('cs_songs').select('id,title,status,reject_reason,created_at,listed_at,unlist_requested_at,unlist_due,unlist_kind').eq('author_id', ME.user.id).order('created_at', { ascending: false });
+  var L = r.data || [], DAY = 864e5;
+  function ymd(t){ return t ? String(t).slice(0, 10) : ''; }
+  function extra(s){
+    if (s.status !== 'listed') return '';
+    var minEnd = new Date(new Date(s.listed_at || s.created_at).getTime() + 60 * DAY).toISOString();
+    if (s.unlist_requested_at) return '<div class="hint">' + (s.unlist_kind === 'normal'
+        ? T('⏳ 내리기 예약 · <b>' + ymd(s.unlist_due) + '</b>에 자동으로 내려갑니다', '⏳ Removal scheduled · goes offline on <b>' + ymd(s.unlist_due) + '</b>')
+        : T('⏳ 예외 내림 요청 · 운영진이 확인 중입니다', '⏳ Exception request · under review by our team')) +
+      ' <a href="#" data-cancel="' + s.id + '" style="color:var(--gold)">' + T('요청 취소', 'Cancel request') + '</a></div>';
+    return '<div class="hint">' + (minEnd > new Date().toISOString() ? T('최소 게재 기간 · ' + ymd(minEnd) + '까지', 'Minimum listing period · until ' + ymd(minEnd)) : T('최소 게재 기간 지남 · 언제든 내릴 수 있습니다', 'Minimum period over · you can remove it anytime')) +
+      ' · <a href="#" data-unlist="' + s.id + '" data-end="' + ymd(minEnd) + '" style="color:var(--gold)">' + T('내리기 요청', 'Request removal') + '</a></div>';
+  }
   $('mine').innerHTML = L.length ? '<div class="sect" style="margin:22px 0 8px"><h2 style="font-size:17px">' + T('내 신청곡', 'My submissions') + '</h2><span class="faint">' + T(L.length + '곡', L.length + (L.length === 1 ? ' song' : ' songs')) + '</span></div><div class="card" style="padding:4px 14px;max-width:760px"><table class="t mine">' +
-    L.map(function(s){ var st = ST[s.status] || [s.status, '']; return '<tr><td><b>' + E(s.title) + '</b>' + (s.reject_reason ? '<div class="hint">' + T('사유: ', 'Reason: ') + E(s.reject_reason) + '</div>' : '') + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td class="faint">' + s.created_at.slice(0, 10) + '</td></tr>'; }).join('') + '</table></div>' : '';
+    L.map(function(s){ var st = ST[s.status] || [s.status, '']; return '<tr><td><b>' + E(s.title) + '</b>' + (s.reject_reason && s.status !== 'listed' ? '<div class="hint">' + T('사유: ', 'Reason: ') + E(s.reject_reason) + '</div>' : '') + extra(s) + '</td><td><span class="tag ' + st[1] + '">' + st[0] + '</span></td><td class="faint">' + s.created_at.slice(0, 10) + '</td></tr>'; }).join('') + '</table></div>' : '';
+  document.querySelectorAll('[data-cancel]').forEach(function(a){ a.onclick = async function(e){ e.preventDefault();
+    if (!confirm(T('내리기 요청을 취소할까요? 곡은 계속 공개됩니다.', 'Cancel the removal request? The song stays online.'))) return;
+    await CS.sb.rpc('cs_song_unlist_cancel', { p_song: a.dataset.cancel }); loadMine(); }; });
+  document.querySelectorAll('[data-unlist]').forEach(function(a){ a.onclick = function(e){ e.preventDefault(); unlistBox(a.dataset.unlist, a.dataset.end); }; });
+}
+/* 내리기 요청: 최소 게재 기간(60일) 중이면 그날 자동으로 내려가고, 예외 사유는 운영진이 확인 뒤 바로 내립니다 */
+function unlistBox(id, end){
+  var past = end <= new Date().toISOString().slice(0, 10), m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = '<div class="card"><h2 style="font-size:19px">' + T('곡 내리기 요청', 'Request removal') + '</h2>' +
+    '<p class="muted" style="font-size:13.5px;line-height:1.75;margin:8px 0 0">' + (past ? T('최소 게재 기간(60일)이 지나 <b style="color:var(--text)">바로 내려갑니다</b>.', 'The 60-day minimum period is over, so the song <b style="color:var(--text)">goes offline now</b>.')
+      : T('공개된 곡은 청취권 회원을 위해 <b style="color:var(--text)">최소 60일</b> 게재합니다(작가 약관 4). 지금 요청하면 <b style="color:var(--text)">' + end + '</b>에 자동으로 내려갑니다. 그 기간에는 첫소절 밖에서 이 곡을 양도 · 독점 계약할 수 없습니다.', 'Live songs stay online for at least <b style="color:var(--text)">60 days</b> for pass holders (Songwriter Terms 4). If you request now, it goes offline on <b style="color:var(--text)">' + end + '</b>. Until then you may not sell or exclusively license it outside Cheotsojeol.')) + '</p>' +
+    '<label class="f">' + T('요청 종류', 'Type') + '</label><select class="in" id="uk"><option value="normal">' + (past ? T('일반 — 지금 내리기', 'Normal — remove now') : T('일반 — 기간이 끝나는 날 내리기', 'Normal — remove when the period ends')) + '</option>' +
+    (past ? '' : '<option value="legal">' + T('예외 — 법령 위반 우려', 'Exception — possible legal violation') + '</option><option value="dispute">' + T('예외 — 권리 분쟁 · 다툼', 'Exception — rights dispute') + '</option><option value="other">' + T('예외 — 부득이한 사유(건강 등)', 'Exception — unavoidable reason (health, etc.)') + '</option>') + '</select>' +
+    '<div id="ukr" style="display:none"><label class="f">' + T('사유 (10자 이상 · 운영진이 확인 후 바로 내립니다)', 'Reason (10+ characters · our team reviews and removes it promptly)') + '</label><textarea class="in" id="ur" maxlength="2000"></textarea></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px"><button class="btn" id="ux">' + T('닫기', 'Close') + '</button><button class="btn coral" id="us">' + T('요청하기', 'Submit') + '</button></div><div class="err" id="uerr"></div></div>';
+  document.body.appendChild(m);
+  m.querySelector('#uk').onchange = function(){ m.querySelector('#ukr').style.display = this.value === 'normal' ? 'none' : ''; };
+  m.querySelector('#ux').onclick = function(){ m.remove(); };
+  m.querySelector('#us').onclick = async function(){
+    var k = m.querySelector('#uk').value, rs = m.querySelector('#ur').value.trim();
+    if (k !== 'normal' && rs.length < 10) { m.querySelector('#uerr').textContent = T('사유를 10자 이상 적어 주세요.', 'Please write at least 10 characters.'); return; }
+    var r = await CS.sb.rpc('cs_song_unlist', { p_song: id, p_kind: k, p_reason: rs || null }), d = r.data || {};
+    if (r.error || !d.ok) { m.querySelector('#uerr').textContent = T('요청하지 못했습니다: ', 'Could not submit: ') + (r.error ? r.error.message : d.error); return; }
+    m.remove(); alert(d.done ? T('곡을 내렸습니다.', 'The song is now offline.') : d.review ? T('예외 요청을 접수했습니다. 운영진이 확인 후 처리합니다.', 'Your exception request was received. Our team will review it.') : T(String(d.due).slice(0, 10) + '에 자동으로 내려갑니다.', 'It will go offline on ' + String(d.due).slice(0, 10) + '.'));
+    loadMine();
+  };
 }
 
 /* ── 작가 등록(처음 한 번) ── */
@@ -110,6 +147,7 @@ function page(){
     [T('이 곡은 제가 직접 만들었으며(공동 창작이면 참여자 전원이 동의했으며), 다른 곡을 베끼지 않았습니다.', 'I wrote this song myself (all co-writers agreed, if any) and it does not copy any other song.'),
      T('이 곡을 다른 곳에 독점으로 넘기거나 계약하지 않았습니다.', 'I have not sold or exclusively licensed this song elsewhere.'),
      T('표절 · 권리 침해가 확인되거나 신고가 들어오면 곡이 바로 숨겨지고, 그로 인한 책임은 제게 있음을 압니다.', 'I understand the song is hidden immediately if plagiarism or infringement is reported or confirmed, and that I am responsible for it.'),
+     T('공개되면 최소 60일 동안 게재되며, 그 기간에는 이 곡을 첫소절 밖에서 양도하거나 독점 계약하지 않습니다(법령 위반 · 권리 분쟁 등은 예외).', 'Once live, the song stays listed for at least 60 days, and during that time I will not sell or exclusively license it outside Cheotsojeol (except for legal violations, rights disputes, etc.).'),
      T('작가 약관과 수수료(20% + 부가세)에 동의합니다.', 'I agree to the Songwriter Terms and the fee (20% + VAT).')].map(function(t){ return '<label class="agree"><input type="checkbox" class="ok"> ' + t + '</label>'; }).join('') +
     '<div class="hint" style="margin-top:14px">' + T('제출하면 ① 음원 자동 판별(발표곡과 같은지 확인) → ② 작곡가 심사위원의 음악성 · 표절 심사 순서로 진행됩니다.', 'After you submit: ① automatic audio matching (checks against released songs) → ② review of musicality and originality by professional composers.') + '</div>';
 }
@@ -179,7 +217,7 @@ async function makeListen(file, onPct){
 function ext(f){ var m = /\.([a-z0-9]{2,4})$/i.exec(f.name); return m ? m[1].toLowerCase() : 'bin'; }
 async function submit(btn){
   var SUB = T('심사 신청하기', 'Submit for review');
-  if ([].slice.call(document.querySelectorAll('.ok')).some(function(x){ return !x.checked; })) return err(T('네 가지 모두 확인해 주세요.', 'Please confirm all four items.'));
+  if ([].slice.call(document.querySelectorAll('.ok')).some(function(x){ return !x.checked; })) return err(T('다섯 가지 모두 확인해 주세요.', 'Please confirm all five items.'));
   btn.disabled = true; btn.textContent = T('파일 올리는 중…', 'Uploading…');
   var id = crypto.randomUUID(), base = ME.user.id + '/' + id, up = CS.sb.storage.from('cs-audio');
   var a = await up.upload(base + '.' + ext(D.audio), D.audio, { contentType: D.audio.type || 'audio/mpeg' });
