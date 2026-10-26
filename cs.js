@@ -44,7 +44,7 @@ CS.top = function(on){
   var T = CS.T, items = [['cs_index.html',T('둘러보기','Browse')],['cs_pass.html',T('청취권','Passes')],['cs_apply.html',T('곡 등록 신청','Submit a song')],['cs_talk.html',T('협상방','Deals')],['cs_admin.html',T('심사함','Review')]];
   var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>' + T('첫소절', 'Cheotsojeol') + '<small>' + T('새 노래가 처음 울리는 곳', 'Where new songs are heard first') + '</small></a><nav class="nav">' +
     items.map(function(x){ return '<a href="' + x[0] + '"' + (x[0] === on ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') +
-    '<a href="#" id="csLang" title="Language">' + (CS.lang === 'en' ? '한국어' : 'EN') + '</a><a class="cta" id="csLogin" href="cs_login.html">' + T('로그인', 'Log in') + '</a></nav></div></header>';
+    '</nav><div class="acts"><a href="#" id="csLang" title="Language">' + (CS.lang === 'en' ? '한국어' : 'EN') + '</a><a class="cta" id="csLogin" href="cs_login.html">' + T('로그인', 'Log in') + '</a></div></div></header>';
   document.body.insertAdjacentHTML('afterbegin', h);
   document.getElementById('csLang').onclick = function(){ CS.setLang(CS.lang === 'en' ? 'ko' : 'en'); return false; };
   CS.me().then(function(m){ var a = document.getElementById('csLogin'); if (!a) return;
