@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261026c"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026c"></script><script src="cs.js?v=20261026c"></script>
+<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261026d"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261026d"></script><script src="cs.js?v=20261026d"></script>
 <style>
 .plans{display:grid;grid-template-columns:repeat(3,1fr);max-width:1000px;gap:14px;margin-top:18px}
 .plan{cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -46,7 +46,7 @@ document.getElementById('plans').addEventListener('click', function(e){ var p = 
 /* 이니시스 SDK 는 미리 받아 둡니다(클릭 뒤에 받으면 팝업 차단으로 오인) */
 var iniP = null;
 function loadIni(){ if (window.INIPayPro) return Promise.resolve(); if (iniP) return iniP; iniP = new Promise(function(ok, no){ var s = document.createElement('script'); s.src = 'https://paypro.inicis.com/std/payment/js/INIPayPro_v2.js'; s.charset = 'UTF-8'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); return iniP; }
-loadIni().catch(function(){});
+if (!CS.app) loadIni().catch(function(){});
 byId('buy').onclick = function(){
   if (!ME || !ME.user) { location.href = 'cs_login.html?next=cs_pass.html'; return; }
   byId('bTitle').textContent = T('청취권 ', 'Pass ') + PRICE[sel]; byId('mh').textContent = '';
@@ -89,13 +89,37 @@ async function showPayPal(){
     onError: function(e){ hint(T('PayPal 결제를 끝내지 못했습니다: ', 'PayPal payment failed: ') + (e && e.message || e), true); }
   }).render('#ppBox');
 }
-var _pick = pick; pick = function(k){ _pick(k); if (byId('buyer').style.display !== 'none') showPayPal(); };
-var _buy = byId('buy').onclick; byId('buy').onclick = function(){ _buy(); if (ME && ME.user) showPayPal(); };
+var _pick = pick; pick = function(k){ _pick(k); if (byId('buyer').style.display !== 'none' && !CS.app) showPayPal(); };
+var _buy = byId('buy').onclick; byId('buy').onclick = function(){ _buy(); if (ME && ME.user && !CS.app) showPayPal(); };
+/* ── 앱 안(아이폰 · 안드로이드): 카드 · PayPal 대신 App Store · Google Play 결제만 (애플 3.1.1 · 구글 결제 정책) ── */
+if (CS.app) {
+  ['bname', 'btel', 'goCard', 'ppWrap'].forEach(function(i){ byId(i).style.display = 'none'; });
+  document.querySelectorAll('#buyer label.f').forEach(function(l){ l.style.display = 'none'; });
+  document.querySelector('#buyer .agree span').textContent = T('곡을 재생하면 디지털 콘텐츠 제공이 시작되어 청약철회가 제한됨을 확인했습니다. 앱에서 산 청취권의 환불은 ' + CS.storeName() + ' 환불 절차를 따릅니다.',
+    'I understand that playing a song starts delivery of digital content and limits withdrawal. Refunds for passes bought in the app follow the ' + CS.storeName() + ' refund process.');
+  document.querySelector('.note').innerHTML = T('· 가격은 부가세 포함입니다. 앱에서는 ' + CS.storeName() + ' 결제로 구매합니다.<br>· 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>· 앱에서 산 청취권의 환불은 ' + CS.storeName() + ' 의 환불 절차를 따릅니다.<br>· 수익 배분: 청취 수익(스토어 수수료를 뺀 금액)의 78%를 곡별 청취 시간 비율로 매달 작가에게 나눕니다.',
+    '· Prices include VAT. In the app you pay with ' + CS.storeName() + '.<br>· A pass allows personal listening for review only; no rights to the songs are transferred. Recording, distributing or publishing is not allowed.<br>· Refunds for passes bought in the app follow the ' + CS.storeName() + ' refund process.<br>· Revenue share: 78% of pass revenue (after store fees) is split monthly among songwriters by listening time.');
+  var sb = document.createElement('button'); sb.className = 'btn gold'; sb.id = 'goStore'; sb.style.cssText = 'width:100%;margin-top:12px';
+  sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay');
+  byId('goCard').after(sb);
+  sb.onclick = function(){
+    hint('');
+    if (!byId('bagree').checked) return hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true);
+    if (!CS.storeBuy(sel)) return hint(T('결제를 시작하지 못했습니다. 앱을 다시 열어 주세요.', 'Could not start payment. Please reopen the app.'), true);
+    sb.disabled = true; sb.textContent = T('결제창을 여는 중…', 'Opening payment…');
+    setTimeout(function(){ sb.disabled = false; sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay'); }, 15000);
+  };
+  document.addEventListener('cs-store', function(e){
+    var k = e.detail.kind; sb.disabled = false; sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay');
+    if (k === 'done') { closeBuy(); showMine(); }
+    else if (k === 'error') hint(T('결제를 끝내지 못했습니다: ', 'Payment did not complete: ') + (e.detail.msg || ''), true);
+  });
+}
 pick('30d');
 CS.sb && CS.sb.from('cs_prices').select('purpose,amount_usd').then(function(r){ (r.data || []).forEach(function(p){ if (p.amount_usd) USD[p.purpose] = (+p.amount_usd).toFixed(2); }); });
-(async function(){
-  ME = await CS.me(); if (!ME.user) return;
+async function showMine(){
   var p = await CS.sb.from('cs_passes').select('kind,ends_at').gte('ends_at', new Date().toISOString()).order('ends_at', { ascending: false }).limit(1);
   if (p.data && p.data[0]) byId('mypass').innerHTML = '✅ ' + T('지금 청취권이 있습니다 · <b>' + p.data[0].ends_at.slice(0, 10) + '</b>까지. 더 사면 그 뒤로 이어집니다.', 'You have an active pass until <b>' + p.data[0].ends_at.slice(0, 10) + '</b>. A new pass starts after it ends.');
-})();
+}
+(async function(){ ME = await CS.me(); if (!ME.user) return; showMine(); if (CS.app) CS.storeFlush(true); })();
 </script></body></html>

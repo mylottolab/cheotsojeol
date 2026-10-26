@@ -1,5 +1,10 @@
-/* 첫소절 — 미리보기용 공용 스크립트 (보기 자료 · 진짜 음원 없음) */
+/* 첫소절 — 공용 스크립트 */
 var CS = {};
+/* ── 앱(아이폰 · 안드로이드) 안에서 열렸는가 ──
+   아이폰 앱은 문서 시작 때 window.CS_APP = 'ios' 와 window.CSNative 를 심고, 안드로이드 앱은 window.CSAndroid 창구를 붙입니다. */
+CS.app = window.CSAndroid ? 'android' : (window.CS_APP === 'ios' || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.csIOS)) ? 'ios' : null;
+try { if (CS.app) sessionStorage.setItem('cs_app', CS.app); else if (sessionStorage.getItem('cs_app') && /CheotsojeolApp/.test(navigator.userAgent)) CS.app = sessionStorage.getItem('cs_app'); } catch (e) {}
+if (CS.app) document.documentElement.classList.add('in-app', 'in-' + CS.app);
 /* 화면 오류를 눈에 보이게(원격 확인용) — 빨간 띠를 누르면 닫힙니다 */
 CS.errs = [];
 window.addEventListener('error', function(e){ CS.showErr((e.message || 'error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
@@ -58,7 +63,8 @@ CS.diag = { ev: [] };
 try { localStorage.setItem('cs_ls_test', '1'); CS.diag.ls = localStorage.getItem('cs_ls_test') === '1' ? 1 : 0; CS.diag.key = Object.keys(localStorage).some(function(k){ return /^sb-.*auth-token$/.test(k); }) ? 1 : 0; } catch (e) { CS.diag.ls = 0; CS.diag.key = 0; }
 CS.sb = (window.supabase && window.CS_SUPABASE_URL) ? window.supabase.createClient(window.CS_SUPABASE_URL, window.CS_SUPABASE_KEY) : null;
 CS._me = null;
-if (CS.sb) CS.sb.auth.onAuthStateChange(function(ev){ CS.diag.ev.push(ev); });
+CS._uid = null;
+if (CS.sb) CS.sb.auth.onAuthStateChange(function(ev, ss){ CS.diag.ev.push(ev); CS._uid = ss && ss.user ? ss.user.id : null; if (CS._uid && CS.app) setTimeout(CS.storeFlush, 300); });
 CS.me = function(force){
   if (CS._me && !force) return CS._me;
   CS._me = (async function(){
@@ -192,3 +198,60 @@ document.addEventListener('DOMContentLoaded', function(){
   if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){ if (CS.deco.mode === 'auto') CS.applyDeco(); });
   setInterval(function(){ if (CS.deco.mode === 'auto') CS.applyDeco(); }, 600000);
 });
+
+/* =====================================================================
+   앱 결제 (App Store · Google Play)  — 2026-10-26
+   화면 → 앱: CS.storeBuy('7d') → 아이폰 CSNative.buy(상품, 계정) · 안드로이드 CSAndroid.storeBuy(상품, 계정)
+   앱 → 화면: window.csStoreEvent({ kind, sku, a: 영수증, b: 주문번호 }) — 'ok' 를 돌려줘야 앱이 넘긴 것으로 압니다
+   영수증은 서버(cs-iap-verify)가 애플 · 구글에 직접 확인한 뒤에만 청취권을 넣고, 그 다음에 앱이 정리(finish · consume)합니다.
+   ===================================================================== */
+CS.SKU = { '7d': 'cs_pass7', '15d': 'cs_pass15', '30d': 'cs_pass30' };
+CS.storeName = function(){ return CS.app === 'ios' ? 'App Store' : 'Google Play'; };
+CS.storeBuy = function(k){
+  var sku = CS.SKU[k]; if (!sku || !CS._uid) return false;
+  try {
+    if (CS.app === 'ios' && window.CSNative) { window.CSNative.buy(sku, CS._uid); return true; }
+    if (CS.app === 'android' && window.CSAndroid) { window.CSAndroid.storeBuy(sku, CS._uid); return true; }
+  } catch (e) { CS.showErr('storeBuy: ' + e.message); }
+  return false;
+};
+CS.storeFlush = function(recover){
+  try {
+    if (CS.app === 'ios' && window.CSNative) window.CSNative.flush();
+    if (CS.app === 'android' && window.CSAndroid) { window.CSAndroid.storeFlush(); if (recover && window.CSAndroid.storeRecover) window.CSAndroid.storeRecover(); }
+  } catch (e) {}
+};
+CS.storeDone = function(token){
+  try {
+    if (CS.app === 'ios' && window.CSNative) window.CSNative.finish(token);
+    if (CS.app === 'android' && window.CSAndroid) window.CSAndroid.storeConsume(token);
+  } catch (e) {}
+};
+CS._busy = {};
+CS.storeToast = function(t, bad){
+  var d = document.getElementById('csToast'); if (!d) { d = document.createElement('div'); d.id = 'csToast'; d.style.cssText = 'position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:98;max-width:calc(100vw - 32px);padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.4)'; (document.body || document.documentElement).appendChild(d); }
+  d.style.background = bad ? '#B3261E' : '#E8B65A'; d.style.color = bad ? '#fff' : '#1B1405'; d.textContent = t; d.style.display = '';
+  clearTimeout(CS._toastT); CS._toastT = setTimeout(function(){ d.style.display = 'none'; }, bad ? 7000 : 5000);
+};
+window.csStoreEvent = function(ev){
+  if (!ev || !CS.sb) return 'wait';
+  var T = CS.T, k = ev.kind;
+  if (k === 'storePurchase') {
+    if (!CS._uid) return 'wait';                       // 로그인 정보를 아직 못 읽음 → 앱이 잠시 뒤 다시 줍니다
+    if (CS._busy[ev.a]) return 'ok';
+    CS._busy[ev.a] = 1;
+    CS.sb.functions.invoke('cs-iap-verify', { body: { sku: ev.sku, token: ev.a, orderId: ev.b || '' } }).then(function(r){
+      var d = r.data || {};
+      if (d.finish) CS.storeDone(ev.a);
+      if (d.ok) CS.storeToast(T('✅ 청취권이 들어왔습니다', '✅ Your pass is active') + (d.ends_at ? T(' · ' + String(d.ends_at).slice(0, 10) + '까지', ' · until ' + String(d.ends_at).slice(0, 10)) : ''));
+      else if (!d.canceled) CS.storeToast(T('결제는 되었지만 확인이 늦어지고 있습니다. 앱을 다시 열면 자동으로 다시 확인합니다.', 'Payment received but confirmation is delayed. It will retry when you reopen the app.') + (d.error ? ' (' + d.error + ')' : ''), true);
+      document.dispatchEvent(new CustomEvent('cs-store', { detail: { kind: d.ok ? 'done' : 'fail', data: d, sku: ev.sku } }));
+    }).catch(function(e){ CS.storeToast(T('확인 중 오류: ', 'Verification error: ') + e.message, true); }).finally(function(){ delete CS._busy[ev.a]; });
+    return 'ok';
+  }
+  if (k === 'storeCanceled') { document.dispatchEvent(new CustomEvent('cs-store', { detail: { kind: 'cancel' } })); return 'ok'; }
+  if (k === 'storePending') { CS.storeToast(T('결제가 아직 확정되지 않았습니다. 확정되면 자동으로 청취권이 들어옵니다.', 'Payment is pending. Your pass will be added once it completes.')); document.dispatchEvent(new CustomEvent('cs-store', { detail: { kind: 'pending' } })); return 'ok'; }
+  if (k === 'storeOwned') return 'ok';
+  if (k === 'storeError') { CS.storeToast(T('결제를 끝내지 못했습니다', 'Payment did not complete') + (ev.a ? ' — ' + ev.a : ''), true); document.dispatchEvent(new CustomEvent('cs-store', { detail: { kind: 'error', msg: ev.a } })); return 'ok'; }
+  return 'ok';
+};
