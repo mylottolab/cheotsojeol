@@ -240,8 +240,9 @@ window.csStoreEvent = function(ev){
     if (!CS._uid) return 'wait';                       // 로그인 정보를 아직 못 읽음 → 앱이 잠시 뒤 다시 줍니다
     if (CS._busy[ev.a]) return 'ok';
     CS._busy[ev.a] = 1;
-    CS.sb.functions.invoke('cs-iap-verify', { body: { sku: ev.sku, token: ev.a, orderId: ev.b || '' } }).then(function(r){
+    CS.sb.functions.invoke('cs-iap-verify', { body: { sku: ev.sku, token: ev.a, orderId: ev.b || '' } }).then(async function(r){
       var d = r.data || {};
+      if (r.error && !r.data) { try { d = await r.error.context.json(); } catch (x) { d = { error: r.error.message }; } }
       if (d.finish) CS.storeDone(ev.a);
       if (d.ok) CS.storeToast(T('✅ 청취권이 들어왔습니다', '✅ Your pass is active') + (d.ends_at ? T(' · ' + String(d.ends_at).slice(0, 10) + '까지', ' · until ' + String(d.ends_at).slice(0, 10)) : ''));
       else if (!d.canceled) CS.storeToast(T('결제는 되었지만 확인이 늦어지고 있습니다. 앱을 다시 열면 자동으로 다시 확인합니다.', 'Payment received but confirmation is delayed. It will retry when you reopen the app.') + (d.error ? ' (' + d.error + ')' : ''), true);

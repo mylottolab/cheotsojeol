@@ -78,10 +78,14 @@ body{background:transparent}
 html.staff body{background-image:repeating-linear-gradient(180deg,transparent 0,transparent 150px,var(--staff) 150px,var(--staff) 151px,transparent 151px,transparent 160px,var(--staff) 160px,var(--staff) 161px,transparent 161px,transparent 170px,var(--staff) 170px,var(--staff) 171px,transparent 171px,transparent 180px,var(--staff) 180px,var(--staff) 181px,transparent 181px,transparent 190px,var(--staff) 190px,var(--staff) 191px,transparent 191px,transparent 260px);background-attachment:fixed}
 html[data-mode=light] .warn{color:#A2412A!important}
 html[data-mode=light] .preview{box-shadow:0 6px 18px rgba(0,0,0,.15)}
-.deco-btn{position:fixed;left:12px;bottom:12px;z-index:40;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:20px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.deco-btn{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:20px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .deco{position:fixed;left:12px;bottom:64px;z-index:41;width:min(330px,calc(100vw - 24px));max-height:calc(100vh - 90px);overflow:auto;padding:16px;border-radius:16px;background:var(--panel);border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.35);display:none}
 .deco.on{display:block}
 .deco h4{margin:12px 0 7px;font-size:12.5px;color:var(--faint);font-weight:700}.deco h4:first-child{margin-top:0}
 .deco .opts{display:flex;flex-wrap:wrap;gap:6px}
 .deco .sw{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
 .deco .sw.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+
+/* 아이폰 앱 · 노치폰: 위 띠가 시계 · 배터리 줄까지 덮고, 아래는 홈 막대만큼 띄움 (2026-10-26) */
+.top{padding-top:env(safe-area-inset-top,0px)}
+body{padding-bottom:env(safe-area-inset-bottom,0px)}
