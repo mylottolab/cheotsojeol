@@ -84,12 +84,15 @@ Deno.serve(async (req) => {
     let order = '', raw: Record<string, unknown> = {};
     if (apple) {
       const id = ext.slice(6), bearer = await appleJwt();
-      let r: Response | null = null, env = 'Production';
+      let r: Response | null = null, env = 'Production'; const seen: string[] = [];
       const ask = async (b: string) => {
         for (const host of ['https://api.storekit.itunes.apple.com', 'https://api.storekit-sandbox.itunes.apple.com']) {
           env = host.includes('sandbox') ? 'Sandbox' : 'Production';
           r = await fetch(host + '/inApps/v1/transactions/' + id, { headers: { Authorization: 'Bearer ' + b } });
-          if (r.status !== 404) break;
+          seen.push(env + ' ' + r.status);
+          // 정식(Production)에 없으면 시험(Sandbox · TestFlight · 애플 심사)에서 찾습니다.
+          // ⚠ 아직 출시 전인 앱은 정식 서버가 404 대신 401 을 줄 때가 있어 401 도 시험 서버로 넘깁니다.
+          if (r.status !== 404 && r.status !== 401) break;
         }
       };
       await ask(bearer);
@@ -99,7 +102,7 @@ Deno.serve(async (req) => {
         const kid = (Deno.env.get('APPLE_IAP_KEY_ID') || '').replace(/[^A-Za-z0-9]/g, ''), iss = (Deno.env.get('APPLE_IAP_ISSUER_ID') || '').replace(/[^A-Za-z0-9-]/g, '');
         console.error('[cs-iap-verify] 애플 확인 실패', st, env, t, 'kid=' + kid, 'iss=' + iss.slice(0, 8));
         const hint = st === 401 ? ' — 키 ID(' + kid + ', ' + kid.length + '자) · Issuer ID(' + iss.slice(0, 8) + '…, ' + iss.length + '자) · .p8 이 같은 키인지 확인' : '';
-        return J({ ok: false, error: '애플 확인 실패 ' + st + ' ' + env + hint + (t ? ' ' + t : '') }, 502);
+        return J({ ok: false, error: '애플 확인 실패 ' + seen.join(' / ') + hint + (t ? ' ' + t : '') }, 502);
       }
       const tx = jwsPayload((await (r as Response).json()).signedTransactionInfo);
       if (tx.bundleId !== APP_ID) return J({ ok: false, error: '다른 앱의 결제입니다' }, 400);
