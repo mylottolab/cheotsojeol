@@ -42,6 +42,7 @@ CS.card = function(s, i){
 };
 CS.top = function(on){
   var T = CS.T, items = [['cs_index.html',T('둘러보기','Browse')],['cs_pass.html',T('청취권','Passes')],['cs_apply.html',T('곡 등록 신청','Submit a song')],['cs_talk.html',T('협상방','Deals')],['cs_admin.html',T('심사함','Review')]];
+  if (CS.app) items = items.filter(function(x){ return x[0] !== 'cs_talk.html'; });   // 앱: 아직 열리지 않은 협상방은 숨김(애플 2.1 — 준비 중 화면 금지)
   var h = '<header class="top"><div class="wrap"><a class="logo" href="cs_index.html"><span class="bar"><i style="height:45%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:100%"></i></span>' + T('첫소절', 'Cheotsojeol') + '<small>' + T('새 노래가 처음 울리는 곳', 'Where new songs are heard first') + '</small></a><nav class="nav">' +
     items.map(function(x){ return '<a href="' + x[0] + '"' + (x[0] === on ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') +
     '</nav><div class="acts"><a href="#" id="csLang" title="Language">' + (CS.lang === 'en' ? '한국어' : 'EN') + '</a><a class="cta" id="csLogin" href="cs_login.html">' + T('로그인', 'Log in') + '</a></div></div></header>';

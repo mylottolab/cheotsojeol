@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261027c"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261027c"></script><script src="cs.js?v=20261027c"></script>
+<title data-en="Listening passes — Cheotsojeol">청취권 — 첫소절</title><link rel="stylesheet" href="cs.css?v=20261027d"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="cs_config.js?v=20261027d"></script><script src="cs.js?v=20261027d"></script>
 <style>
 .plans{display:grid;grid-template-columns:repeat(3,1fr);max-width:1000px;gap:14px;margin-top:18px}
 .plan{cursor:pointer;transition:box-shadow .15s,border-color .15s}
@@ -100,17 +100,17 @@ if (CS.app) {
   document.querySelector('.note').innerHTML = T('· 가격은 부가세 포함입니다. 앱에서는 ' + CS.storeName() + ' 결제로 구매합니다.<br>· 청취권은 듣고 검토하는 개인적 이용만 허락하며, 곡의 권리는 이전되지 않습니다. 녹음 · 배포 · 공개는 할 수 없습니다.<br>· 앱에서 산 청취권의 환불은 ' + CS.storeName() + ' 의 환불 절차를 따릅니다.<br>· 수익 배분: 청취 수익(스토어 수수료를 뺀 금액)의 78%를 곡별 청취 시간 비율로 매달 작가에게 나눕니다.',
     '· Prices include VAT. In the app you pay with ' + CS.storeName() + '.<br>· A pass allows personal listening for review only; no rights to the songs are transferred. Recording, distributing or publishing is not allowed.<br>· Refunds for passes bought in the app follow the ' + CS.storeName() + ' refund process.<br>· Revenue share: 78% of pass revenue (after store fees) is split monthly among songwriters by listening time.');
   var sb = document.createElement('button'); sb.className = 'btn gold'; sb.id = 'goStore'; sb.style.cssText = 'width:100%;margin-top:12px';
-  sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay');
+  sb.textContent = T((CS.app === 'ios' ? ' App Store' : '▶ Google Play') + '로 결제하기', (CS.app === 'ios' ? ' Pay with App Store' : '▶ Pay with Google Play'));
   byId('goCard').after(sb);
   sb.onclick = function(){
     hint('');
     if (!byId('bagree').checked) return hint(T('환불 안내를 확인해 주세요.', 'Please confirm the refund notice.'), true);
     if (!CS.storeBuy(sel)) return hint(T('결제를 시작하지 못했습니다. 앱을 다시 열어 주세요.', 'Could not start payment. Please reopen the app.'), true);
     sb.disabled = true; sb.textContent = T('결제창을 여는 중…', 'Opening payment…');
-    setTimeout(function(){ sb.disabled = false; sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay'); }, 15000);
+    setTimeout(function(){ sb.disabled = false; sb.textContent = T((CS.app === 'ios' ? ' App Store' : '▶ Google Play') + '로 결제하기', (CS.app === 'ios' ? ' Pay with App Store' : '▶ Pay with Google Play')); }, 15000);
   };
   document.addEventListener('cs-store', function(e){
-    var k = e.detail.kind; sb.disabled = false; sb.textContent = (CS.app === 'ios' ? ' App Store' : '▶ Google Play') + T('로 결제하기', ' — pay');
+    var k = e.detail.kind; sb.disabled = false; sb.textContent = T((CS.app === 'ios' ? ' App Store' : '▶ Google Play') + '로 결제하기', (CS.app === 'ios' ? ' Pay with App Store' : '▶ Pay with Google Play'));
     if (k === 'done') { closeBuy(); showMine(); }
     else if (k === 'error') hint(T('결제를 끝내지 못했습니다: ', 'Payment did not complete: ') + (e.detail.msg || ''), true);
   });
